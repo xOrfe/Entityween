@@ -21,6 +21,11 @@ namespace Entityween.Scripts
         
         public FunctionPointer<ActionJobs.ActionTypeDelegate> MyActionMethod;
 
+        public ChunkFloat3ChangeOrder()
+        {
+            
+        }
+        
         public bool Equals(ChunkFloat3ChangeOrder other)
         {
             return Value == other.Value;

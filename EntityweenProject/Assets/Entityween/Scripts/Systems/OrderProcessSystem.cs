@@ -18,20 +18,20 @@ namespace Entityween.Scripts
             _entityCommandBufferSystem = World.GetOrCreateSystem<EndInitializationEntityCommandBufferSystem>();
         }
         
-        //[BurstCompile]
+        [BurstCompile]
         private struct ChunkChangeJob: IJobChunk
         {
             [ReadOnly] public double JobTime;
-            public ArchetypeChunkComponentType<Translation> TransformType;
-            [ReadOnly] public ArchetypeChunkEntityType EntityType;
-            [ReadOnly] public ArchetypeChunkSharedComponentType<ChunkFloat3ChangeOrder> MoveByOrderSharedComponentDataType;
-            public EntityCommandBuffer.Concurrent CommandBuffer;
-            
+            public ComponentTypeHandle<Translation> TransformType;
+            [ReadOnly] public EntityTypeHandle EntityType;
+            [ReadOnly] public SharedComponentTypeHandle<ChunkFloat3ChangeOrder> MoveByOrderSharedComponentDataType;
+            public EntityCommandBuffer.ParallelWriter CommandBuffer;
+            public EntityManager EntityManager;
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
                 var chunkTransforms = chunk.GetNativeArray(TransformType);
                 var chunkEntities = chunk.GetNativeArray(EntityType);
-                var order = chunk.GetSharedComponentData(MoveByOrderSharedComponentDataType, World.DefaultGameObjectInjectionWorld.EntityManager);
+                var order = chunk.GetSharedComponentData(MoveByOrderSharedComponentDataType, EntityManager);
                 
                 var orderStart = order.StartTime;
                 var orderEnd = orderStart + order.Time;
@@ -69,9 +69,9 @@ namespace Entityween.Scripts
         {
             EntityQuery moveByOrderQuery = GetEntityQuery(typeof(Translation) , ComponentType.ReadOnly<ChunkFloat3ChangeOrder>());
             var jobTime = Time.ElapsedTime;
-            var entityType = GetArchetypeChunkEntityType();
-            var moveByOrderSharedComponentDataType = GetArchetypeChunkSharedComponentType<ChunkFloat3ChangeOrder>();
-            var transformType = GetArchetypeChunkComponentType<Translation>();
+            var entityType = GetEntityTypeHandle();
+            var moveByOrderSharedComponentDataType = GetSharedComponentTypeHandle<ChunkFloat3ChangeOrder>();
+            var transformType = GetComponentTypeHandle<Translation>();
             
             var job = new ChunkChangeJob
             {
@@ -79,7 +79,8 @@ namespace Entityween.Scripts
                 EntityType = entityType,
                 TransformType = transformType,
                 MoveByOrderSharedComponentDataType = moveByOrderSharedComponentDataType,
-                CommandBuffer = _entityCommandBufferSystem.CreateCommandBuffer().ToConcurrent()
+                CommandBuffer = _entityCommandBufferSystem.CreateCommandBuffer().AsParallelWriter(),
+                EntityManager = EntityManager
             }.Schedule(moveByOrderQuery, inputDeps);
             _entityCommandBufferSystem.AddJobHandleForProducer(job);
             return job;
