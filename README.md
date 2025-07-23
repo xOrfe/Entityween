@@ -48,12 +48,4 @@ com.unity.entities.hybrid
 
 ---
 
-## ✨ Extras
-
-More cuteness coming soon:
-
-* 🌈 Spline support
-* ⏱️ Duration control
-* 💫 Custom easing curves
-
 Stay tuned! 💌
