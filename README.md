@@ -10,10 +10,12 @@ Move your entities like a boss 🕺 — now with *easing magic* and *spline fair
 A simple ride from point A to point B~  
 
 ```csharp
-entity
+	entity
     .MoveTo(3f, entityManager.World)
     .Destination(new float3(3, 3, 3))
     .Ease(EaseType.InOutBack)
+	.OnUpdate(Update)
+	.OnUpdate(Complete)
     .Play(ecb);
 ````
 
@@ -24,11 +26,15 @@ entity
 Let your entity dance through the stars\~ ⭐
 
 ```csharp
-entity
-    .MoveTo(3f, entityManager.World)
-    .Destination(new float3(3, 3, 3))
-    .Ease(EaseType.InOutBack)
-    .Play(ecb);
+		var destination = new NativeList<float3>(Allocator.Temp);
+        destination.Add(new float3(0,0,0));
+        destination.Add(new float3(0.5f,2,0));
+        destination.Add(new float3(0,0,0));
+        
+        entity.MoveTo(8f, entityManager.World)
+            .Destination(destination,SplineType.BSpline)
+            .Ease(EaseType.InQuad)
+            .Play(ecb);
 ```
 
 ---
