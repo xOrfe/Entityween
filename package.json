@@ -1,0 +1,16 @@
+{
+	"displayName": "Entityween",
+	"name": "com.xorfe.entityween",
+	"version": "0.1.0",
+	"unity": "6.0",
+	"description": "Tweening utilities for Unity dots",
+	"keywords": [ "unity", "tween", "dots" ],
+	"category": "Repository category",
+	"author": {
+		"name": "xOrfe"
+	},
+	"dependencies": {
+	},
+	"scopedRegistries": [
+	]
+}
