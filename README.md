@@ -14,8 +14,8 @@ entity
     .MoveTo(3f, entityManager.World)
     .Destination(new float3(3, 3, 3))
     .Ease(EaseType.InOutBack)
-	.OnUpdate(Update)
-	.OnUpdate(Complete)
+    .OnUpdate(Updated)
+    .OnComplete(Completed)
     .Play(ecb);
 ````
 
