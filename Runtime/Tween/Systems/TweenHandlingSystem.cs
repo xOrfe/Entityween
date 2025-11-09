@@ -21,7 +21,7 @@ namespace XO.Entityween
         [BurstCompile]
         protected override void OnCreate()
         {
-            InitializeTweens();
+            InitializeContainers();
         }
 
         [BurstCompile]
@@ -43,6 +43,7 @@ namespace XO.Entityween
                 }.Schedule(_tweens1D.Tweens.Length, 64, Dependency);
                 handles.Add(tweenJob1D);
             }
+
             if (_tweens2D.Calculate)
             {
                 var tweenJob2D = new TweenJob2D
@@ -53,6 +54,7 @@ namespace XO.Entityween
                 }.Schedule(_tweens2D.Tweens.Length, 64, Dependency);
                 handles.Add(tweenJob2D);
             }
+
             if (_tweens3D.Calculate)
             {
                 var tweenJob3D = new TweenJob3D
@@ -63,6 +65,7 @@ namespace XO.Entityween
                 }.Schedule(_tweens3D.Tweens.Length, 64, Dependency);
                 handles.Add(tweenJob3D);
             }
+
             if (_tweens4D.Calculate)
             {
                 var tweenJob4D = new TweenJob4D
@@ -73,6 +76,7 @@ namespace XO.Entityween
                 }.Schedule(_tweens4D.Tweens.Length, 64, Dependency);
                 handles.Add(tweenJob4D);
             }
+
             var tweensHandle = JobHandle.CombineDependencies(handles.ToArray(Allocator.Temp));
             var moveToJob = new MoveToJob()
             {
@@ -94,7 +98,7 @@ namespace XO.Entityween
         [BurstCompile]
         protected override void OnDestroy()
         {
-            DisposeTweens();
+            DisposeContainers();
         }
 
         [BurstCompile]
@@ -109,58 +113,88 @@ namespace XO.Entityween
                 case TweenType.Callback:
                     break;
                 case TweenType.MoveTo:
-                    index = _tweens3D.AttachTween(blueprint as TweenBlueprint<float3>, ecb);
                     if (entityManager.HasComponent<MoveTo>(blueprint.Entity))
-                        ecb.SetComponent(blueprint.Entity, new MoveTo(index));
+                    {
+                        index = entityManager.GetComponentData<MoveTo>(blueprint.Entity).Index;
+                        _tweens3D.Override(index, blueprint as TweenBlueprint<float3>);
+                    }
                     else
+                    {
+                        index = _tweens3D.Attach(blueprint as TweenBlueprint<float3>);
                         ecb.AddComponent(blueprint.Entity, new MoveTo(index));
+                    }
                     break;
                 case TweenType.MoveToWorld:
-                    index = _tweens3D.AttachTween(blueprint as TweenBlueprint<float3>, ecb);
                     if (entityManager.HasComponent<MoveToWorld>(blueprint.Entity))
-                        ecb.SetComponent(blueprint.Entity, new MoveToWorld(index));
+                    {
+                        index = entityManager.GetComponentData<MoveToWorld>(blueprint.Entity).Index;
+                        _tweens3D.Override(index, blueprint as TweenBlueprint<float3>);
+                    }
                     else
+                    {
+                        index = _tweens3D.Attach(blueprint as TweenBlueprint<float3>);
                         ecb.AddComponent(blueprint.Entity, new MoveToWorld(index));
+                    }
                     break;
                 case TweenType.RotateTo:
-                    index = _tweens4D.AttachTween(blueprint as TweenBlueprint<quaternion>, ecb);
                     if (entityManager.HasComponent<RotateTo>(blueprint.Entity))
-                        ecb.SetComponent(blueprint.Entity, new RotateTo(index));
+                    {
+                        index = entityManager.GetComponentData<RotateTo>(blueprint.Entity).Index;
+                        _tweens3D.Override(index, blueprint as TweenBlueprint<float3>);
+                    }
                     else
+                    {
+                        index = _tweens3D.Attach(blueprint as TweenBlueprint<float3>);
                         ecb.AddComponent(blueprint.Entity, new RotateTo(index));
+                    }
                     break;
                 case TweenType.RotateToWorld:
-                    index = _tweens4D.AttachTween(blueprint as TweenBlueprint<quaternion>, ecb);
                     if (entityManager.HasComponent<RotateToWorld>(blueprint.Entity))
-                        ecb.SetComponent(blueprint.Entity, new RotateToWorld(index));
+                    {
+                        index = entityManager.GetComponentData<RotateToWorld>(blueprint.Entity).Index;
+                        _tweens4D.Override(index, blueprint as TweenBlueprint<quaternion>);
+                    }
                     else
+                    {
+                        index = _tweens4D.Attach(blueprint as TweenBlueprint<quaternion>);
                         ecb.AddComponent(blueprint.Entity, new RotateToWorld(index));
+                    }
                     break;
                 case TweenType.ScaleTo:
-                    index = _tweens3D.AttachTween(blueprint as TweenBlueprint<float3>, ecb);
                     if (entityManager.HasComponent<ScaleTo>(blueprint.Entity))
-                        ecb.SetComponent(blueprint.Entity, new ScaleTo(index));
+                    {
+                        index = entityManager.GetComponentData<ScaleTo>(blueprint.Entity).Index;
+                        _tweens3D.Override(index, blueprint as TweenBlueprint<float3>);
+                    }
                     else
+                    {
+                        index = _tweens3D.Attach(blueprint as TweenBlueprint<float3>);
                         ecb.AddComponent(blueprint.Entity, new ScaleTo(index));
+                    }
                     break;
                 case TweenType.ScaleToUniform:
-                    index = _tweens1D.AttachTween(blueprint as TweenBlueprint<float>, ecb);
                     if (entityManager.HasComponent<ScaleToUniform>(blueprint.Entity))
-                        ecb.SetComponent(blueprint.Entity, new ScaleToUniform(index));
+                    {
+                        index = entityManager.GetComponentData<ScaleToUniform>(blueprint.Entity).Index;
+                        _tweens1D.Override(index, blueprint as TweenBlueprint<float>);
+                    }
                     else
+                    {
+                        index = _tweens1D.Attach(blueprint as TweenBlueprint<float>);
                         ecb.AddComponent(blueprint.Entity, new ScaleToUniform(index));
+                    }
                     break;
                 case TweenType.FloatTo:
-                    index = _tweens1D.AttachTween(blueprint as TweenBlueprint<float>, ecb);
+                    index = _tweens1D.Attach(blueprint as TweenBlueprint<float>);
                     break;
                 case TweenType.Float2To:
-                    index = _tweens2D.AttachTween(blueprint as TweenBlueprint<float2>, ecb);
+                    index = _tweens2D.Attach(blueprint as TweenBlueprint<float2>);
                     break;
                 case TweenType.Float3To:
-                    index = _tweens3D.AttachTween(blueprint as TweenBlueprint<float3>, ecb);
+                    index = _tweens3D.Attach(blueprint as TweenBlueprint<float3>);
                     break;
                 case TweenType.QuaternionTo:
-                    index = _tweens4D.AttachTween(blueprint as TweenBlueprint<quaternion>, ecb);
+                    index = _tweens4D.Attach(blueprint as TweenBlueprint<quaternion>);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -171,7 +205,7 @@ namespace XO.Entityween
         }
 
         [BurstCompile]
-        private void InitializeTweens()
+        private void InitializeContainers()
         {
             _tweens1D = new TweenContainer<float>(64);
             _tweens2D = new TweenContainer<float2>(64);
@@ -180,7 +214,7 @@ namespace XO.Entityween
         }
 
         [BurstCompile]
-        private void DisposeTweens()
+        private void DisposeContainers()
         {
             _tweens1D.Dispose();
             _tweens2D.Dispose();

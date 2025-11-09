@@ -8,6 +8,7 @@ namespace XO.Entityween
         {
             base.OnCreate();
             AddSystemToUpdateList(World.CreateSystem<TweenHandlingSystem>());
+            AddSystemToUpdateList(World.CreateSystem<ChaseHandlingSystem>());
             AddSystemToUpdateList(World.CreateSystemManaged<UpdateWorldTimeSystem>());
         }
     }

@@ -17,7 +17,7 @@ namespace XO.Entityween
             AvailableTweens = new NativeQueue<int>(Allocator.Persistent);
         }
 
-        public int AttachTween(TweenBlueprint<T> blueprint, EntityCommandBuffer ecb)
+        public int Attach(TweenBlueprint<T> blueprint)
         {
             var startValue = blueprint.IsSpline
                 ? (blueprint.Spline.Value.AutoEnd ? blueprint.Spline.Value.Points[1] : blueprint.Spline.Value.Points[0])
@@ -36,6 +36,20 @@ namespace XO.Entityween
                 index = Tweens.Length - 1;
             }
             return index;
+        }
+        public void Override(int index, TweenBlueprint<T> blueprint)
+        {
+            var startValue = blueprint.IsSpline
+                ? (blueprint.Spline.Value.AutoEnd ? blueprint.Spline.Value.Points[1] : blueprint.Spline.Value.Points[0])
+                : blueprint.StartPoint;
+            Tweens[index] = new Tween<T>(blueprint);
+            TweensRuntimeData[index] = new TweenRuntimeData<T>(startValue);
+        }
+        public void Remove(int index)
+        {
+            AvailableTweens.Enqueue(index);
+            Tweens[index] = default;
+            TweensRuntimeData[index] = default;
         }
 
         public void Dispose()
