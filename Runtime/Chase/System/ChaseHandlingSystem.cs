@@ -1,13 +1,11 @@
 ﻿using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace XO.Entityween
 {
     [BurstCompile]
+    [DisableAutoCreation]
     public partial class ChaseHandlingSystem : SystemBase
     {
         private ChaseContainer _chases;
