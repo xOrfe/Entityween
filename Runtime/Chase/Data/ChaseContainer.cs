@@ -1,75 +1,76 @@
 ﻿using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace XO.Entityween
 {
-    public class ChaseContainer
+    public class ChaseContainer<T> where T : unmanaged
     {
-        public NativeList<Chase> chases;
-        public NativeList<ChaseRuntimeData> ChasesRuntimeData;
+        public NativeList<Chase<T>> Chases;
+        public NativeList<ChaseRuntimeData<T>> ChasesRuntimeData;
         public NativeQueue<int> AvailableChases;
 
-        public bool Calculate => chases.Length > 0;
+        public bool Calculate => Chases.Length > 0;
 
         public ChaseContainer(int capacity)
         {
-            chases = new NativeList<Chase>(capacity, Allocator.Persistent);
-            ChasesRuntimeData = new NativeList<ChaseRuntimeData>(capacity, Allocator.Persistent);
+            Chases = new NativeList<Chase<T>>(capacity, Allocator.Persistent);
+            ChasesRuntimeData = new NativeList<ChaseRuntimeData<T>>(capacity, Allocator.Persistent);
             AvailableChases = new NativeQueue<int>(Allocator.Persistent);
         }
 
-        public int Attach(ChaseBlueprint blueprint)
+        public int Attach(ChaseBlueprint<T> blueprint)
         {
-            var chase = new Chase(blueprint);
+            var chase = new Chase<T>(blueprint);
             return Attach(chase);
         }
 
-        private int Attach(Chase chase)
+        private int Attach(Chase<T> chase)
         {
             var index = -1;
             if (AvailableChases.Count > 0)
             {
                 index = AvailableChases.Dequeue();
-                chases[index] = chase;
-                ChasesRuntimeData[index] = new ChaseRuntimeData(chases[index].TStepMinMax.x,chases[index].TStepMinMax.x);
+                Chases[index] = chase;
+                ChasesRuntimeData[index] = new ChaseRuntimeData<T>(Chases[index].TStepMinMax.x);
             }
             else
             {
-                chases.Add(chase);
-                index = chases.Length - 1;
-                ChasesRuntimeData.Add(new ChaseRuntimeData(chases[index].TStepMinMax.x,chases[index].TStepMinMax.x));
+                Chases.Add(chase);
+                index = Chases.Length - 1;
+                ChasesRuntimeData.Add(new ChaseRuntimeData<T>(Chases[index].TStepMinMax.x));
             }
 
             return index;
         }
 
-        public void Override(int index, ChaseBlueprint blueprint)
+        public void Override(int index, ChaseBlueprint<T> blueprint)
         {
-            Override(index, new Chase(blueprint));
+            Override(index, new Chase<T>(blueprint));
         }
 
-        private void Override(int index, Chase chase)
+        private void Override(int index, Chase<T> chase)
         {
-            chases[index] = chase;
-            ChasesRuntimeData[index] = new ChaseRuntimeData(chases[index].TStepMinMax.x,chases[index].TStepMinMax.x);
+            Chases[index] = chase;
+            ChasesRuntimeData[index] = new ChaseRuntimeData<T>(Chases[index].TStepMinMax.x);
         }
 
         public void Remove(int index)
         {
             AvailableChases.Enqueue(index);
-            chases[index] = default;
+            Chases[index] = default;
             ChasesRuntimeData[index] = default;
         }
 
 
         public void Dispose()
         {
-            if (chases.Length > 0)
-                foreach (var chase in chases)
+            if (Chases.Length > 0)
+                foreach (var chase in Chases)
                 {
                 }
 
-            chases.Dispose();
+            Chases.Dispose();
             ChasesRuntimeData.Dispose();
             AvailableChases.Dispose();
         }

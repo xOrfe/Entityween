@@ -2,10 +2,26 @@
 
 namespace XO.Entityween
 {
-    public readonly struct ChaseTag : IComponentData
+    public readonly struct ChasePositionTag : IComponentData, IEnableableComponent
     {
         public readonly int Index;
-        public ChaseTag(int index)
+        public ChasePositionTag(int index)
+        {
+            Index = index;
+        }
+    }
+    public readonly struct ChaseRotationTag : IComponentData, IEnableableComponent
+    {
+        public readonly int Index;
+        public ChaseRotationTag(int index)
+        {
+            Index = index;
+        }
+    }
+    public readonly struct LookTag : IComponentData, IEnableableComponent
+    {
+        public readonly int Index;
+        public LookTag(int index)
         {
             Index = index;
         }

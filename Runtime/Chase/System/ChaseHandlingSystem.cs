@@ -1,5 +1,9 @@
-﻿using Unity.Burst;
+﻿using System;
+using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
+using Unity.Mathematics;
 using Unity.Transforms;
 
 namespace XO.Entityween
@@ -8,7 +12,9 @@ namespace XO.Entityween
     [DisableAutoCreation]
     public partial class ChaseHandlingSystem : SystemBase
     {
-        private ChaseContainer _chases;
+        private ChaseContainer<float3> _chasePositionContainers;
+        private ChaseContainer<quaternion> _chaseRotationContainers;
+        private ChaseContainer<quaternion> _lookContainers;
 
         [BurstCompile]
         protected override void OnCreate()
@@ -23,18 +29,35 @@ namespace XO.Entityween
             var localToWorldLookup = GetComponentLookup<LocalToWorld>(isReadOnly: true);
             var parentLookup = GetComponentLookup<Parent>(isReadOnly: true);
             var deltaTime = SystemAPI.Time.DeltaTime;
-            if (_chases.Calculate)
+
+            var positionHandle = new ChasePositionJob()
             {
-                var chaseHandle = new ChaseJob()
-                {
-                    ParentLookup = parentLookup,
-                    LocalToWorldLookup = localToWorldLookup,
-                    deltaTime = deltaTime,
-                    Chases = _chases.chases.AsDeferredJobArray(),
-                    ChasesRuntimeData = _chases.ChasesRuntimeData.AsDeferredJobArray()
-                }.Schedule(Dependency);
-                Dependency = chaseHandle;
-            }
+                ParentLookup = parentLookup,
+                LocalToWorldLookup = localToWorldLookup,
+                DeltaTime = deltaTime,
+                Chases = _chasePositionContainers.Chases.AsDeferredJobArray(),
+                ChasesRuntimeData = _chasePositionContainers.ChasesRuntimeData.AsDeferredJobArray()
+            }.Schedule(Dependency);
+
+            var rotationHandle = new ChaseRotationJob()
+            {
+                ParentLookup = parentLookup,
+                LocalToWorldLookup = localToWorldLookup,
+                DeltaTime = deltaTime,
+                Chases = _chaseRotationContainers.Chases.AsDeferredJobArray(),
+                ChasesRuntimeData = _chaseRotationContainers.ChasesRuntimeData.AsDeferredJobArray()
+            }.Schedule(positionHandle);
+            
+            var lookHandle = new LookJob()
+            {
+                ParentLookup = parentLookup,
+                LocalToWorldLookup = localToWorldLookup,
+                DeltaTime = deltaTime,
+                Chases = _lookContainers.Chases.AsDeferredJobArray(),
+                ChasesRuntimeData = _lookContainers.ChasesRuntimeData.AsDeferredJobArray()
+            }.Schedule(rotationHandle);
+            
+            Dependency = lookHandle;
         }
 
         [BurstCompile]
@@ -44,50 +67,86 @@ namespace XO.Entityween
         }
 
         [BurstCompile]
-        public void AttachChase(ChaseBlueprint blueprint, World world, EntityCommandBuffer ecb)
+        public void AttachChase(ChaseBlueprint<float3> blueprint, World world, EntityCommandBuffer ecb)
         {
             var entityManager = world.EntityManager;
-
             var index = -1;
-            if (entityManager.HasComponent<ChaseTag>(blueprint.Entity))
+            if (entityManager.HasComponent<ChasePositionTag>(blueprint.Entity))
             {
-                index = entityManager.GetComponentData<ChaseTag>(blueprint.Entity).Index;
-                _chases.Override(index, blueprint);
+                index = entityManager.GetComponentData<ChasePositionTag>(blueprint.Entity).Index;
+                _chasePositionContainers.Override(index, blueprint);
             }
             else
             {
-                index = _chases.Attach(blueprint);
-                ecb.AddComponent(blueprint.Entity, new ChaseTag(index));
+                index = _chasePositionContainers.Attach(blueprint);
+                ecb.AddComponent(blueprint.Entity, new ChasePositionTag(index));
             }
         }
 
         [BurstCompile]
-        public void AttachChase(ChaseBlueprint blueprint, EntityManager em)
+        public void AttachChase(ChaseBlueprint<quaternion> blueprint, World world, EntityCommandBuffer ecb)
         {
+            var entityManager = world.EntityManager;
             var index = -1;
-            if (em.HasComponent<ChaseTag>(blueprint.Entity))
+
+            switch (blueprint.ChaseType)
             {
-                index = em.GetComponentData<ChaseTag>(blueprint.Entity).Index;
-                _chases.Override(index, blueprint);
+                case ChaseType.ChasePosition:
+                    break;
+                case ChaseType.ChaseRotation:
+                    if (entityManager.HasComponent<ChaseRotationTag>(blueprint.Entity))
+                    {
+                        index = entityManager.GetComponentData<ChaseRotationTag>(blueprint.Entity).Index;
+                        _chaseRotationContainers.Override(index, blueprint);
+                    }
+                    else
+                    {
+                        index = _chaseRotationContainers.Attach(blueprint);
+                        ecb.AddComponent(blueprint.Entity, new ChaseRotationTag(index));
+                    }
+
+                    break;
+                case ChaseType.Look:
+                    if (entityManager.HasComponent<LookTag>(blueprint.Entity))
+                    {
+                        index = entityManager.GetComponentData<LookTag>(blueprint.Entity).Index;
+                        _lookContainers.Override(index, blueprint);
+                    }
+                    else
+                    {
+                        index = _lookContainers.Attach(blueprint);
+                        ecb.AddComponent(blueprint.Entity, new LookTag(index));
+                    }
+
+                    break;
+                case ChaseType.ChasePositionAndRotation:
+                    break;
+                case ChaseType.ChasePositionAndLook:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
-            else
-            {
-                index = _chases.Attach(blueprint);
-                em.AddComponent<ChaseTag>(blueprint.Entity);
-                em.SetComponentData(blueprint.Entity, new ChaseTag(index));
-            }
+        }
+
+        [BurstCompile]
+        public void AttachChase(ChaseBlueprint<float4x4> blueprint, World world, EntityCommandBuffer ecb)
+        {
         }
 
         [BurstCompile]
         private void InitializeContainers()
         {
-            _chases = new ChaseContainer(64);
+            _chasePositionContainers = new ChaseContainer<float3>(64);
+            _chaseRotationContainers = new ChaseContainer<quaternion>(64);
+            _lookContainers = new ChaseContainer<quaternion>(64);
         }
 
         [BurstCompile]
         private void DisposeContainers()
         {
-            _chases.Dispose();
+            _chasePositionContainers.Dispose();
+            _chaseRotationContainers.Dispose();
+            _lookContainers.Dispose();
         }
     }
 }
