@@ -10,7 +10,6 @@ namespace XO.Entityween
 
     public readonly struct Chase<T> where T : unmanaged
     {
-        public Entity TargetEntity { get; }
         public float2 TStepMinMax { get; }
         public float MaxStepTime { get; }
         public bool IsOverride { get; }
@@ -40,7 +39,6 @@ namespace XO.Entityween
 
         public Chase(ChaseBlueprint<T> blueprint)
         {
-            TargetEntity = blueprint.Target;
             TStepMinMax = blueprint.TStepMinMax;
             MaxStepTime = blueprint.MaxStepTime;
             IsOverride = blueprint.IsOverride;
@@ -48,6 +46,19 @@ namespace XO.Entityween
             OnStart = blueprint.OnStart;
             OnUpdate = blueprint.OnUpdate;
             OnChased = blueprint.OnChased;
+        }
+
+        public Chase(float2 tStepMinMax, float maxStepTime, bool isOverride, T transform,
+            FunctionPointer<ChaseCallback>? onStart, FunctionPointer<ChaseCallback>? onUpdate,
+            FunctionPointer<ChaseCallback>? onChased)
+        {
+            TStepMinMax = tStepMinMax;
+            MaxStepTime = maxStepTime;
+            IsOverride = isOverride;
+            Transform = transform;
+            OnStart = onStart;
+            OnUpdate = onUpdate;
+            OnChased = onChased;
         }
     }
 

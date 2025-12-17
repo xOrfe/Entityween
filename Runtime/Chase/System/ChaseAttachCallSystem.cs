@@ -2,7 +2,6 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using UnityEngine;
 
 namespace XO.Entityween
 {
@@ -22,8 +21,6 @@ namespace XO.Entityween
             foreach (var (chaseAttachCall, entity) in SystemAPI.Query<RefRO<ChaseAttachCall>>().WithEntityAccess())
             {
                 var call = chaseAttachCall.ValueRO;
-
-
                 if (call.ChaseType is ChaseType.ChasePosition or ChaseType.ChasePositionAndLook
                     or ChaseType.ChasePositionAndRotation)
                 {

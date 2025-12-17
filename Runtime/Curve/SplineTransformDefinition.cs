@@ -26,25 +26,25 @@ namespace XO.Curve
         public Spline.SplineData<quaternion> rotational;
     }
     
-    public struct SplineTransform
+    public readonly struct SplineTransform
     {
-        public readonly float duration;
-        public readonly EaseType easeType;
-        public readonly BlobAssetReference<Spline.SplineBlob<float3>> positional;
-        public readonly BlobAssetReference<Spline.SplineBlob<quaternion>> rotational;
+        public readonly float Duration;
+        public readonly EaseType EaseType;
+        public readonly BlobAssetReference<Spline.SplineBlob<float3>> Positional;
+        public readonly BlobAssetReference<Spline.SplineBlob<quaternion>> Rotational;
         
         public SplineTransform(SplineTransformDefinition definition)
         {
-            duration = definition.duration;
-            easeType = definition.easeType;
-            positional = Spline.CreateSplineBlob<float3>(definition.positional);
-            rotational = Spline.CreateSplineBlob<quaternion>(definition.rotational);
+            Duration = definition.duration;
+            EaseType = definition.easeType;
+            Positional = Spline.CreateSplineBlob<float3>(definition.positional);
+            Rotational = Spline.CreateSplineBlob<quaternion>(definition.rotational);
         }
         
         public readonly void Dispose()
         {
-            positional.Dispose();
-            rotational.Dispose();
+            Positional.Dispose();
+            Rotational.Dispose();
         }
     }
 }

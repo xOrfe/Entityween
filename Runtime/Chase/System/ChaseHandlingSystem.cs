@@ -1,8 +1,6 @@
 ﻿using System;
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 
@@ -47,7 +45,7 @@ namespace XO.Entityween
                 Chases = _chaseRotationContainers.Chases.AsDeferredJobArray(),
                 ChasesRuntimeData = _chaseRotationContainers.ChasesRuntimeData.AsDeferredJobArray()
             }.Schedule(positionHandle);
-            
+
             var lookHandle = new LookJob()
             {
                 ParentLookup = parentLookup,
@@ -56,7 +54,7 @@ namespace XO.Entityween
                 Chases = _lookContainers.Chases.AsDeferredJobArray(),
                 ChasesRuntimeData = _lookContainers.ChasesRuntimeData.AsDeferredJobArray()
             }.Schedule(rotationHandle);
-            
+
             Dependency = lookHandle;
         }
 
@@ -74,12 +72,13 @@ namespace XO.Entityween
             if (entityManager.HasComponent<ChasePositionTag>(blueprint.Entity))
             {
                 index = entityManager.GetComponentData<ChasePositionTag>(blueprint.Entity).Index;
+                ecb.SetComponent(blueprint.Entity, new ChasePositionTag(blueprint.Target, index));
                 _chasePositionContainers.Override(index, blueprint);
             }
             else
             {
                 index = _chasePositionContainers.Attach(blueprint);
-                ecb.AddComponent(blueprint.Entity, new ChasePositionTag(index));
+                ecb.AddComponent(blueprint.Entity, new ChasePositionTag(blueprint.Target, index));
             }
         }
 
@@ -97,12 +96,13 @@ namespace XO.Entityween
                     if (entityManager.HasComponent<ChaseRotationTag>(blueprint.Entity))
                     {
                         index = entityManager.GetComponentData<ChaseRotationTag>(blueprint.Entity).Index;
+                        ecb.SetComponent(blueprint.Entity, new ChaseRotationTag(blueprint.Target, index));
                         _chaseRotationContainers.Override(index, blueprint);
                     }
                     else
                     {
                         index = _chaseRotationContainers.Attach(blueprint);
-                        ecb.AddComponent(blueprint.Entity, new ChaseRotationTag(index));
+                        ecb.AddComponent(blueprint.Entity, new ChaseRotationTag(blueprint.Target, index));
                     }
 
                     break;
@@ -110,12 +110,13 @@ namespace XO.Entityween
                     if (entityManager.HasComponent<LookTag>(blueprint.Entity))
                     {
                         index = entityManager.GetComponentData<LookTag>(blueprint.Entity).Index;
+                        ecb.SetComponent(blueprint.Entity, new LookTag(blueprint.Target, index));
                         _lookContainers.Override(index, blueprint);
                     }
                     else
                     {
                         index = _lookContainers.Attach(blueprint);
-                        ecb.AddComponent(blueprint.Entity, new LookTag(index));
+                        ecb.AddComponent(blueprint.Entity, new LookTag(blueprint.Target, index));
                     }
 
                     break;

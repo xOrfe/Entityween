@@ -21,9 +21,9 @@ namespace XO.Entityween
             ref LocalTransform localTransform)
         {
             var chase = Chases[chaseTag.Index];
-            if (!LocalToWorldLookup.HasComponent(chase.TargetEntity))
+            if (!LocalToWorldLookup.HasComponent(chaseTag.Target))
                 return;
-            var targetLtw = LocalToWorldLookup[chase.TargetEntity];
+            var targetLtw = LocalToWorldLookup[chaseTag.Target];
             var diff = targetLtw.Position - ltw.Position;
             var dist = math.length(diff);
 
