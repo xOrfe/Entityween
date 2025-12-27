@@ -3,7 +3,6 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 using XO.Curve;
 
 namespace XO.Entityween
@@ -21,16 +20,20 @@ namespace XO.Entityween
             ref LocalTransform localTransform)
         {
             var chase = Chases[chaseTag.Index];
-            if (!LocalToWorldLookup.HasComponent(chaseTag.Target))
-                return;
-            var targetLtw = LocalToWorldLookup[chaseTag.Target];
 
-            var diff = targetLtw.Position - ltw.Position;
+            if (chaseTag.IsEntity && !LocalToWorldLookup.HasComponent(chaseTag.TargetEntity))
+                return;
+
+            var desiredPosition = chaseTag.IsEntity
+                ? LocalToWorldLookup[chaseTag.TargetEntity].Position
+                : chaseTag.TargetPosition;
+
+            var diff = desiredPosition - ltw.Position;
             var dist = math.length(diff);
 
             if (chase.IsOverride)
             {
-                SetWorldPosition(entity, targetLtw.Position, ref localTransform);
+                SetWorldPosition(entity, desiredPosition, ref localTransform);
                 return;
             }
 
@@ -42,7 +45,7 @@ namespace XO.Entityween
                 float3 newWorldPos = float3.zero;
                 var t = 0.0f;
                 Ease.Sample(chase.TStepMinMax.x, chase.TStepMinMax.y, time, EaseType.Linear, ref t);
-                Ease.Sample(ltw.Position, targetLtw.Position, t, EaseType.Linear, ref newWorldPos);
+                Ease.Sample(ltw.Position, desiredPosition, t, EaseType.Linear, ref newWorldPos);
                 SetWorldPosition(entity, newWorldPos, ref localTransform);
                 time += (DeltaTime / chase.MaxStepTime) * 1;
             }

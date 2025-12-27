@@ -20,23 +20,24 @@ namespace XO.Entityween
             ref LocalTransform localTransform)
         {
             var chase = Chases[chaseTag.Index];
-            if (!LocalToWorldLookup.HasComponent(chaseTag.Target))
-                return;
-            var targetLtw = LocalToWorldLookup[chaseTag.Target];
-            var diff = targetLtw.Position - ltw.Position;
-            var dist = math.length(diff);
 
-            quaternion desiredRot = targetLtw.Rotation;
+            if (chaseTag.IsEntity && !LocalToWorldLookup.HasComponent(chaseTag.TargetEntity))
+                return;
+
+            var desiredRotation = chaseTag.IsEntity
+                ? LocalToWorldLookup[chaseTag.TargetEntity].Rotation
+                : chaseTag.TargetQuaternion;
+
             if (chase.IsOverride)
             {
-                SetWorldRotation(entity, desiredRot, ref localTransform);
+                SetWorldRotation(entity, desiredRotation, ref localTransform);
                 return;
             }
 
             var chaseRuntimeData = ChasesRuntimeData[chaseTag.Index];
             var time = chaseRuntimeData.Time;
 
-            var angularDot = math.dot(desiredRot, ltw.Rotation);
+            var angularDot = math.dot(desiredRotation, ltw.Rotation);
             angularDot = math.abs(angularDot);
             if (angularDot < 0.99999f)
             {
@@ -44,7 +45,7 @@ namespace XO.Entityween
 
                 var t = 0.0f;
                 Ease.Sample(chase.TStepMinMax.x, chase.TStepMinMax.y, time, EaseType.Linear, ref t);
-                Ease.Sample(ltw.Rotation, desiredRot, t, EaseType.Linear, ref newWorldRot);
+                Ease.Sample(ltw.Rotation, desiredRotation, t, EaseType.Linear, ref newWorldRot);
                 SetWorldRotation(entity, newWorldRot, ref localTransform);
                 time += (DeltaTime / chase.MaxStepTime) * 1;
             }

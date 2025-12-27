@@ -13,7 +13,6 @@ namespace XO.Entityween
         public float2 TStepMinMax { get; }
         public float MaxStepTime { get; }
         public bool IsOverride { get; }
-        public T Transform { get; }
         private FunctionPointer<ChaseCallback>? OnStart { get; }
         private FunctionPointer<ChaseCallback>? OnUpdate { get; }
         private FunctionPointer<ChaseCallback>? OnChased { get; }
@@ -42,7 +41,6 @@ namespace XO.Entityween
             TStepMinMax = blueprint.TStepMinMax;
             MaxStepTime = blueprint.MaxStepTime;
             IsOverride = blueprint.IsOverride;
-            Transform = blueprint.Transform;
             OnStart = blueprint.OnStart;
             OnUpdate = blueprint.OnUpdate;
             OnChased = blueprint.OnChased;
@@ -55,7 +53,6 @@ namespace XO.Entityween
             TStepMinMax = tStepMinMax;
             MaxStepTime = maxStepTime;
             IsOverride = isOverride;
-            Transform = transform;
             OnStart = onStart;
             OnUpdate = onUpdate;
             OnChased = onChased;

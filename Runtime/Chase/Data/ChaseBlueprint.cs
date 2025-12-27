@@ -14,7 +14,6 @@ namespace XO.Entityween
         public float2 TStepMinMax;
         public float MaxStepTime;
         public bool IsOverride;
-        public T Transform;
         public FunctionPointer<ChaseCallback>? OnStart;
         public FunctionPointer<ChaseCallback>? OnUpdate;
         public FunctionPointer<ChaseCallback>? OnChased;
@@ -28,7 +27,6 @@ namespace XO.Entityween
             Target = target;
             TStepMinMax = new float2(0.01f, 0.075f);
             MaxStepTime = 1.0f;
-            Transform = default;
             IsOverride = false;
             OnStart = null;
             OnUpdate = null;

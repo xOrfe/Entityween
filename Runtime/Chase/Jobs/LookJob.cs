@@ -3,7 +3,6 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 using XO.Curve;
 
 namespace XO.Entityween
@@ -21,13 +20,18 @@ namespace XO.Entityween
             ref LocalTransform localTransform)
         {
             var chase = Chases[chaseTag.Index];
-            if (!LocalToWorldLookup.HasComponent(chaseTag.Target))
+
+            if (chaseTag.IsEntity && !LocalToWorldLookup.HasComponent(chaseTag.Target))
                 return;
-            var targetLtw = LocalToWorldLookup[chaseTag.Target];
-            var diff = targetLtw.Position - ltw.Position;
+
+
+            var targetPos = chaseTag.IsEntity ? LocalToWorldLookup[chaseTag.Target].Position : chaseTag.TargetPosition;
+
+            var diff = targetPos - ltw.Position;
             var dist = math.length(diff);
 
             quaternion desiredRot = dist > 1e-6f ? quaternion.LookRotationSafe(diff / dist, math.up()) : ltw.Rotation;
+
             if (chase.IsOverride)
             {
                 SetWorldRotation(entity, desiredRot, ref localTransform);
