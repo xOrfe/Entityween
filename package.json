@@ -1,0 +1,44 @@
+{
+	"displayName": "Entityween",
+	"name": "com.xorfe.entityween",
+	"version": "1.0.0",
+	"unity": "6.0",
+	"description": "High-performance tweening utilities for Unity DOTS.",
+	"keywords": [
+		"unity",
+		"tween",
+		"dots",
+		"entities",
+		"animation"
+	],
+	"category": "Animation",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/xOrfe/Entityween.git"
+	},
+	"documentationUrl": "https://github.com/xOrfe/Entityween#readme",
+	"author": {
+		"name": "xOrfe"
+	},
+	"samples": [
+		{
+			"displayName": "Quick Start",
+			"description": "Minimal Entityween usage examples for transform tweens and sequences.",
+			"path": "Samples~/Quick Start"
+		},
+		{
+			"displayName": "Scenes",
+			"description": "Interactive showcase and benchmark scenes demonstrating Entityween features.",
+			"path": "Samples~/Scenes"
+		}
+	],
+	"dependencies": {
+		"com.unity.burst": "1.8.12",
+		"com.unity.entities": "1.2.0",
+		"com.unity.entities.graphics": "1.2.0",
+		"com.unity.collections": "2.2.0",
+		"com.unity.mathematics": "1.3.1"
+	},
+	"scopedRegistries": []
+}

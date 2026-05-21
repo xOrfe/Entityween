@@ -1,0 +1,26 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vs/
+.idea/
+*.sln
+*.csproj
+*.user
+*.userprefs
+
+# Unity generated project folders
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+MemoryCaptures/
+Recordings/
+
+# Unity Package Manager artifacts
+*.tgz
+
+# Local analysis / tooling output
+graphify-out/
