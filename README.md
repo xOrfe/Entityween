@@ -12,6 +12,13 @@
 A Burst-compatible, allocation-free tweening package for Unity DOTS (`com.unity.entities`). It provides a fluent builder
 API that compiles down to Burst-optimized runtime systems.
 
+<p align="center">
+  <img src="Documentation~/images/benchmark_10000.png" alt="Spline HUD" width="44%" />
+  <img src="Documentation~/images/showcase.gif" alt="Spline HUD" width=44%" />
+</p>
+
+
+
 ## Features
 
 - **Burst-Compiled**: Tween calculations and damp/chase systems are fully jobified and Burst-compiled.
@@ -37,127 +44,6 @@ Add this to your project's `Packages/manifest.json`:
 ```json
 "com.xorfe.entityween": "https://github.com/xOrfe/Entityween.git"
 ```
-
----
-
-## Quick Start
-
-Entityween integrates seamlessly with Unity's DOTS Authoring workflow, allowing you to define tweens and target chasing behaviors directly on GameObjects using `Baker` classes. Below are two production-ready examples demonstrating path tweening and target chasing.
-
-### 1. Spline-Based Path Tweening (Moving Platform)
-
-Configure and edit spline paths directly in the Inspector or using the interactive Scene View HUD with auto-tangent calculations:
-
-<p align="center">
-  <img src="Documentation~/images/spline_hud.png" alt="Spline HUD" width="45%" />
-  <img src="Documentation~/images/spline_inspector.png" alt="Spline Inspector" width="45%" />
-</p>
-
-Create a `MovingPlatformAuthoring` component to animate a platform along a spline:
-
-```csharp
-using Unity.Entities;
-using Unity.Mathematics;
-using UnityEngine;
-using XO.Curve;
-using XO.Entityween;
-
-public class MovingPlatformAuthoring : MonoBehaviour
-{
-    // Serializable spline exposed to Unity Inspector & Scene View handles
-    public SerializableSpline<float3> splinePath = new SerializableSpline<float3>();
-    public float duration = 4.0f;
-    public EaseType easeType = EaseType.InOutQuad;
-    public LoopType loopType = LoopType.PingPong;
-}
-
-public class MovingPlatformBaker : Baker<MovingPlatformAuthoring>
-{
-    public override void Bake(MovingPlatformAuthoring authoring)
-    {
-        var entity = GetEntity(TransformUsageFlags.Dynamic);
-        if (authoring.splinePath == null || authoring.splinePath.points == null || authoring.splinePath.points.Length == 0)
-            return;
-
-        // 1. Calculate tangents and validate spline control points at bake-time (no runtime allocations)
-        authoring.splinePath.ValidatePoints();
-
-        // 2. Flatten spline points/tangents into runtime-optimized format
-        float3[] flatPoints = SplineUtility.GetFlatPointsArray<float3, Float3Math>(
-            authoring.splinePath.splineType,
-            authoring.splinePath.isClosed,
-            authoring.splinePath.points,
-            authoring.splinePath.tangents
-        );
-
-        // 3. Play the tween along the path
-        entity.MoveToWorld(authoring.duration, authoring.splinePath.points[0])
-            .Along(flatPoints, authoring.splinePath.splineType, authoring.splinePath.isClosed)
-            .Ease(authoring.easeType)
-            .Loop(authoring.loopType)
-            .Visualize() // Draws path gizmos in Scene View (Editor only)
-            .Play(this);
-    }
-}
-```
-
-### 2. Target Chasing & Look-At (Security Drone)
-
-Track a dynamic target Entity (e.g. a Player) smoothly while orienting towards it:
-
-```csharp
-using Unity.Entities;
-using UnityEngine;
-using XO.Entityween;
-
-public class SecurityDroneAuthoring : MonoBehaviour
-{
-    public GameObject targetObject;
-    public float chaseSmoothTime = 0.3f;
-    public float lookSmoothTime = 0.15f;
-}
-
-public class SecurityDroneBaker : Baker<SecurityDroneAuthoring>
-{
-    public override void Bake(SecurityDroneAuthoring authoring)
-    {
-        var entity = GetEntity(TransformUsageFlags.Dynamic);
-        var targetEntity = GetEntity(authoring.targetObject, TransformUsageFlags.Dynamic);
-
-        if (targetEntity == Entity.Null)
-            return;
-
-        // 1. Chase target entity's position using SmoothDamp
-        entity.ChasePosition(targetEntity)
-            .SmoothDamp(authoring.chaseSmoothTime)
-            .Play(this);
-
-        // 2. Continuously rotate to face/look at the target
-        entity.Look(targetEntity)
-            .SmoothDamp(authoring.lookSmoothTime)
-            .Play(this);
-    }
-}
-```
-
-### 3. Automated Showcase Scene (Try It Instantly!)
-
-Rather than building everything from scratch, Entityween includes an automated **Showcase Scene** demonstrating all major features:
-- **MoveLocal / MoveWorld**: Local and world-space position tweening.
-- **RotateWorld / RotateLocal**: Rotation loops in different spaces.
-- **ScalePingPong / ScaleUniform**: Pulsing scale examples.
-- **SplinePath**: Closed Catmull-Rom, open Cubic Bezier, and Step spline paths.
-- **ChaseTarget / LookAtTarget**: Target chasing and target orientation.
-- **ChasePositionAndRotation / ChasePositionAndLook**: Combined follow behaviors.
-- **SequenceShowcase**: Multi-step tween sequences (Move -> Rotate -> Move).
-- **Ease Gallery SubScene**: Every `EaseType` shown as ordered ping-pong sphere motion.
-- **Benchmark SubScene**: Switchable stress test mode with 1k, 10k, 50k, and 100k spawned entities.
-
-#### How to run:
-1. Open the **Package Manager** and import the **Scenes** sample.
-2. Click the menu item: **Tools -> Entityween -> Generate Showcase Scene**.
-3. This builds one main scene (`EntityweenShowcase.unity`) and three switchable SubScenes (`EntityweenShowcase_Entities.unity`, `EntityweenEaseGallery_Entities.unity`, and `EntityweenBenchmark_Entities.unity`) under `Assets/Samples/Entityween/1.0.0/Scenes/`.
-4. Enter **Play Mode** and use the top-right buttons to switch between Showcase, Eases, and Benchmark.
 
 ---
 
@@ -264,11 +150,6 @@ entity
 
 ## Spline Paths
 
-Configure and edit spline paths directly in the Inspector or using the interactive Scene View HUD:
-
-![Spline HUD](Documentation~/images/spline_hud.png)
-
-![Spline Inspector](Documentation~/images/spline_inspector.png)
 
 ```csharp
 // Path points collection
@@ -340,37 +221,29 @@ public partial struct CallbackSystem : ISystem
 
 ---
 
-## Debugger Tool
-
-Entityween includes a built-in visual debugger (`EntityweenDebuggerWindow`) to monitor active tweens and chase systems in real-time. Open it in Unity via `XO -> Entityween Debugger`.
-
-![Debugger](Documentation~/images/debugger.png)
-
----
-
 ## Playback Contexts
 
 You can execute a built tween/sequence in different environments:
 
-### 1. Entity Command Buffer (Systems/Jobs)
+### @Entity Command Buffer (Systems/Jobs)
 
 ```csharp
 tween.Play(ecb);
 ```
 
-### 2. Parallel Jobs (Requires Sort Key)
+### @Parallel Jobs (Requires Sort Key)
 
 ```csharp
 tween.Play(chunkIndex, ref parallelWriter);
 ```
 
-### 3. Immediate Execution (Main Thread)
+### @Immediate Execution (Main Thread)
 
 ```csharp
 tween.Play(state.EntityManager);
 ```
 
-### 4. Baker (Subscenes)
+### @Baker (Subscenes)
 
 ```csharp
 public class ObstacleBaker : Baker<ObstacleAuthoring>
