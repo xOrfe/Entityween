@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg?style=flat-square)](LICENSE)
 
 <p align="center">
-  <img src="Documentation~/images/signature.svg" alt="xorfe signature" width="400" />
+  <img src="Documentation~/images/signature.svg" alt="xorfe signature" width="520" />
 </p>
 
 A Burst-compatible, allocation-free tweening package for Unity DOTS. It provides a fluent builder
