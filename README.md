@@ -13,8 +13,8 @@ A Burst-compatible, allocation-free tweening package for Unity DOTS. It provides
 API that compiles down to Burst-optimized runtime systems.
 
 <p align="center">
-  <img src="Documentation~/images/benchmark_10000.png" alt="Spline HUD" width="44%" />
-  <img src="Documentation~/images/showcase.gif" alt="Spline HUD" width=44%" />
+  <img src="Documentation~/images/benchmark_10000.png" alt="Spline HUD" width="60%" />
+  <img src="Documentation~/images/showcase.gif" alt="Spline HUD" width=40%" />
 </p>
 
 
