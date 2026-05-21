@@ -9,7 +9,7 @@
   <img src="Documentation~/images/signature.svg" alt="xorfe signature" width="400" />
 </p>
 
-A Burst-compatible, allocation-free tweening package for Unity DOTS (`com.unity.entities`). It provides a fluent builder
+A Burst-compatible, allocation-free tweening package for Unity DOTS. It provides a fluent builder
 API that compiles down to Burst-optimized runtime systems.
 
 <p align="center">
