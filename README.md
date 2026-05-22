@@ -291,42 +291,6 @@ To evaluate curves, calculate distances, or run custom spring-damping calculatio
   * `GetDistance(a, b)`: Calculates distance between two values (angular distance for quaternions).
   * `SmoothDamp(current, target, ref velocity, smoothTime, maxSpeed, deltaTime)`: Smoothly damps towards a target value.
 
-### Tangent Generation Example
-
-Generate control tangents for spline keypoints automatically at runtime:
-
-```csharp
-using XO.Curve;
-using Unity.Collections;
-using Unity.Mathematics;
-
-// 1. Spline keypoints
-float3[] points = new float3[] 
-{ 
-    new float3(0f, 0f, 0f), 
-    new float3(2f, 5f, 0f), 
-    new float3(5f, 0f, 0f) 
-};
-float3[] tangents = null;
-
-// 2. Auto-calculate the required boundary/control tangents
-SplineUtility.InitializeOrResizeTangents(
-    SplineType.CatmullRom, 
-    isClosed: false, 
-    points, 
-    ref tangents, 
-    autoCalculate: true
-);
-
-// 3. Flatten keypoints & tangents into a single array ready for Along()
-float3[] flatPoints = SplineUtility.GetFlatPointsArray<float3, Float3Math>(
-    SplineType.CatmullRom, 
-    isClosed: false, 
-    points, 
-    tangents
-);
-```
-
 ---
 
 <p align="center">
