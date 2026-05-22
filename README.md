@@ -184,7 +184,7 @@ Choreograph multiple tweens, waits, and callback events:
 Sequence.Create()
     .Append(entity.MoveToWorld(new float3(0f, 5f, 0f), 0.5f).Ease(EaseType.OutQuad))
     .Append(entity.Wait(0.2f))
-    .Join(entity.ScaleTo(new float3(1.5f), 0.3f)) // Play alongside next tween
+    .Join(entity.ScaleTo(new float3(1.5f), 0.3f)) // Play alongside
     .Append(entity.MoveToWorld(new float3(5f, 5f, 0f), 0.5f))
     .AppendCallback("Done")
     .Play(ecb);
