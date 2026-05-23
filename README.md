@@ -225,25 +225,25 @@ public partial struct CallbackSystem : ISystem
 
 You can execute a built tween/sequence in different environments:
 
-### @Entity Command Buffer (Systems/Jobs)
+### @Systems/Jobs
 
 ```csharp
 tween.Play(ecb);
 ```
 
-### @Parallel Jobs (Requires Sort Key)
+### @Parallel Jobs
 
 ```csharp
 tween.Play(chunkIndex, ref parallelWriter);
 ```
 
-### @Immediate Execution (Main Thread)
+### @Immediate Execution
 
 ```csharp
 tween.Play(state.EntityManager);
 ```
 
-### @Baker (Subscenes)
+### @Baker
 
 ```csharp
 public class ObstacleBaker : Baker<ObstacleAuthoring>
