@@ -19,13 +19,6 @@ Burst-friendly ECS systems.
   <img src="Documentation~/images/showcase.gif" alt="Entityween showcase" width="80%" />
 </p>
 
-## Highlights
-
-- Tween ECS entities, GameObjects, fields/properties, or update callbacks.
-- Run one-shot tweens, continuous chases, or timeline-style sequences.
-- Use EntityManager, EntityCommandBuffer, parallel writers, or Bakers.
-- Add loops, easing, path splines, bend splines, and playback controls.
-
 ## Installation
 
 Add the package from this Git URL:
