@@ -10,9 +10,13 @@ namespace XO.Entityween
 
     [UpdateInGroup(typeof(EntityweenSystemGroup))]
     [UpdateAfter(typeof(EntityweenSequenceGroup))]
-    internal partial class EntityweenCalculationGroup : ComponentSystemGroup { }
+    internal partial class EntityweenTweenGroup : ComponentSystemGroup { }
 
     [UpdateInGroup(typeof(EntityweenSystemGroup))]
-    [UpdateAfter(typeof(EntityweenCalculationGroup))]
+    [UpdateAfter(typeof(EntityweenTweenGroup))]
     internal partial class EntityweenChaseGroup : ComponentSystemGroup { }
+
+    [UpdateInGroup(typeof(EntityweenSystemGroup))]
+    [UpdateAfter(typeof(EntityweenChaseGroup))]
+    internal partial class EntityweenEndSimulationGroup : ComponentSystemGroup { }
 }

@@ -11,6 +11,12 @@ namespace XO.Entityween
         Random
     }
 
+    public enum LoopEaseMode : byte
+    {
+        Mirror,
+        Repeat
+    }
+
     public enum PlaybackTimeType : byte
     {
         Scaled,
