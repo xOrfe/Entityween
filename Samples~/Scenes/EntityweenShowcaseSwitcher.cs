@@ -35,8 +35,8 @@ namespace Entityween.Samples
 
         [Header("Shared Behaviours")]
         [SerializeField] private MonoBehaviour[] showcaseBehaviours;
-        [SerializeField] private MonoBehaviour[] benchmarkBehaviours;   // Entity benchmark behaviours
-        [SerializeField] private MonoBehaviour[] goBenchmarkBehaviours;  // GameObject benchmark behaviours
+        [SerializeField] private MonoBehaviour[] benchmarkBehaviours;
+        [SerializeField] private MonoBehaviour[] goBenchmarkBehaviours;
 
         private GUIStyle panelStyle;
         private GUIStyle buttonStyle;
@@ -47,7 +47,6 @@ namespace Entityween.Samples
 
         private void Awake()
         {
-            // Default initialization
             SetState(SceneMode.Showcase, PlaybackType.Entities, force: true);
         }
 
@@ -65,7 +64,6 @@ namespace Entityween.Samples
 
             GUI.Box(panelRect, "Entityween Showcase", panelStyle);
 
-            // 1. Playback Type Toggle (Entities vs GameObjects)
             float toggleWidth = (panelRect.width - 30f) * 0.5f;
             float toggleY = panelRect.y + 40f;
 
@@ -78,7 +76,6 @@ namespace Entityween.Samples
                 SetState(currentMode, PlaybackType.GameObjects);
             }
 
-            // 2. Scene Mode Selector
             float buttonWidth = (panelRect.width - 40f) / 3f;
             float buttonY = panelRect.y + 85f;
 
@@ -104,17 +101,17 @@ namespace Entityween.Samples
 
             ClearAllActiveStates();
 
-            // Configure Active Camera Settings based on the scene
             ConfigureCamera(mode);
-
+            
+            SetGameObjectActive(showcaseRoot, false);
+            SetGameObjectActive(easeGalleryRoot, false);
+            SetGameObjectActive(benchmarkRoot, false);
+            UnloadSubScene(showcaseSubScene);
+            UnloadSubScene(easeGallerySubScene);
+            UnloadSubScene(benchmarkSubScene);
+            
             if (type == PlaybackType.Entities)
             {
-                // Unload all GameObject roots
-                SetGameObjectActive(showcaseRoot, false);
-                SetGameObjectActive(easeGalleryRoot, false);
-                SetGameObjectActive(benchmarkRoot, false);
-
-                // Enable entity components/SubScenes
                 switch (mode)
                 {
                     case SceneMode.Showcase:
@@ -130,14 +127,8 @@ namespace Entityween.Samples
                         break;
                 }
             }
-            else // GameObjects
+            else
             {
-                // Unload all Entity SubScenes
-                UnloadSubScene(showcaseSubScene);
-                UnloadSubScene(easeGallerySubScene);
-                UnloadSubScene(benchmarkSubScene);
-
-                // Activate corresponding GameObject root
                 switch (mode)
                 {
                     case SceneMode.Showcase:
@@ -157,15 +148,12 @@ namespace Entityween.Samples
 
         private void ClearAllActiveStates()
         {
-            // Clear DOTS benchmark entities
             ClearBenchmarkEntities();
 
-            // Disable all shared/specific behaviours
             SetBehaviours(showcaseBehaviours, false);
             SetBehaviours(benchmarkBehaviours, false);
             SetBehaviours(goBenchmarkBehaviours, false);
 
-            // Reset SubScenes loading status (will be set accordingly in SetState)
             UnloadSubScene(showcaseSubScene);
             UnloadSubScene(easeGallerySubScene);
             UnloadSubScene(benchmarkSubScene);
