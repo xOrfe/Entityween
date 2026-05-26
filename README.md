@@ -16,8 +16,7 @@ fluent builders, stores playback in ECS components, and runs the hot path in
 Burst-friendly systems.
 
 <p align="center">
-  <img src="Documentation~/images/benchmark_10000.png" alt="Entityween benchmark" width="60%" />
-  <img src="Documentation~/images/showcase.gif" alt="Entityween showcase" width="40%" />
+  <img src="Documentation~/images/showcase.gif" alt="Entityween showcase" width="80%" />
 </p>
 
 ## Highlights
