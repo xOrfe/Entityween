@@ -43,10 +43,6 @@ Or add it to `Packages/manifest.json`:
 ## Quick Start
 
 ```csharp
-using Unity.Entities;
-using Unity.Mathematics;
-using XO.Entityween;
-
 entity
     .MoveToWorld(new float3(0f, 3f, 0f), 1.0f)
     .Ease(EaseType.OutCubic)
