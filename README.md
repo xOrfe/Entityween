@@ -11,9 +11,9 @@
   <img src="Documentation~/images/signature.svg" alt="xorfe signature" width="520" />
 </p>
 
-Entityween is a small tween, chase, and sequence package for Unity DOTS. It uses
-fluent builders, stores playback in ECS components, and runs the hot path in
-Burst-friendly systems.
+Entityween is a Unity tweening package for GameObjects and DOTS/ECS. It provides
+a fluent builder API and runs tween, chase, and sequence playback through
+Burst-friendly ECS systems.
 
 <p align="center">
   <img src="Documentation~/images/showcase.gif" alt="Entityween showcase" width="80%" />
