@@ -153,20 +153,24 @@ namespace Entityween.Samples
                     scale));
                 em.AddComponentData(entity, new LocalToWorld());
 
-                entity.MoveToWorld(moveDuration, OrbitPoints[pointIndex])
-                    .Along(ShiftedOrbitPoints(pointIndex, i % 2 == 1), SplineType.CatmullRom, isClosed: true)
+                float3[] shiftedPoints = ShiftedOrbitPoints(pointIndex, i % 2 == 1);
+                using (var orbitPath = new NativeArray<float3>(shiftedPoints, Allocator.Temp))
+                {
+                    entity.MoveToWorld(OrbitPoints[pointIndex], moveDuration)
+                        .Along(orbitPath, SplineType.CatmullRom, isClosed: true)
+                        .Ease(EaseType.Linear)
+                        .Loop(LoopType.Repeat)
+                        .Play(em);
+                }
+
+                entity.RotateToLocal(quaternion.EulerXYZ(new float3(math.PI * 0.85f, math.PI * 1.25f, math.PI * 0.55f)), 1.4f + (i % 5) * 0.22f)
+                    .From(quaternion.identity)
                     .Ease(EaseType.Linear)
                     .Loop(LoopType.Repeat)
                     .Play(em);
 
-                entity.RotateToLocal(1.4f + (i % 5) * 0.22f, quaternion.identity)
-                    .To(quaternion.EulerXYZ(new float3(math.PI * 0.85f, math.PI * 1.25f, math.PI * 0.55f)))
-                    .Ease(EaseType.Linear)
-                    .Loop(LoopType.Repeat)
-                    .Play(em);
-
-                entity.ScaleTo(1.8f + (i % 4) * 0.25f, new float3(scale))
-                    .To(new float3(scale * (1.25f + (i % 3) * 0.12f)))
+                entity.ScaleTo(new float3(scale * (1.25f + (i % 3) * 0.12f)), 1.8f + (i % 4) * 0.25f)
+                    .From(new float3(scale))
                     .Ease(EaseType.InOutSine)
                     .Loop(LoopType.PingPong)
                     .Play(em);

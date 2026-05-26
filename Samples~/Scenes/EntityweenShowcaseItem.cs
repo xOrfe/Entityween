@@ -73,15 +73,14 @@ namespace Entityween.Samples
         {
             var entity = GetEntity(TransformUsageFlags.Dynamic);
 
-            // Add the floating text description component
             AddComponent(entity, new ShowcaseText { Value = authoring.description ?? "" });
 
             switch (authoring.preset)
             {
                 case ShowcasePreset.MoveLocal:
                     var localStart = (float3)authoring.transform.localPosition;
-                    entity.MoveToLocal(authoring.duration, localStart)
-                        .To(localStart + authoring.moveOffset)
+                    entity.MoveToLocal(localStart + authoring.moveOffset, authoring.duration)
+                        .From(localStart)
                         .Ease(authoring.ease)
                         .Loop(authoring.loop)
                         .Play(this);
@@ -103,70 +102,63 @@ namespace Entityween.Samples
                     break;
 
                 case ShowcasePreset.RotateWorld:
-                    entity.RotateToWorld(authoring.duration, quaternion.identity)
-                        .To(quaternion.EulerXYZ(math.radians(authoring.rotationDegrees)))
+                    entity.RotateToWorld(quaternion.EulerXYZ(math.radians(authoring.rotationDegrees)), authoring.duration)
+                        .From(quaternion.identity)
                         .Ease(authoring.ease)
                         .Loop(authoring.loop)
                         .Play(this);
                     break;
 
                 case ShowcasePreset.RotateLocal:
-                    entity.RotateToLocal(authoring.duration, quaternion.identity)
-                        .To(quaternion.EulerXYZ(math.radians(authoring.rotationDegrees)))
+                    entity.RotateToLocal(quaternion.EulerXYZ(math.radians(authoring.rotationDegrees)), authoring.duration)
+                        .From(quaternion.identity)
                         .Ease(authoring.ease)
                         .Loop(authoring.loop)
                         .Play(this);
                     break;
 
                 case ShowcasePreset.ScalePingPong:
-                    entity.ScaleTo(authoring.duration, new float3(1f))
-                        .To(authoring.scaleTarget)
+                    entity.ScaleTo(authoring.scaleTarget, authoring.duration)
+                        .From(new float3(1f))
                         .Ease(authoring.ease)
                         .Loop(LoopType.PingPong)
                         .Play(this);
                     break;
 
                 case ShowcasePreset.ScaleUniform:
-                    entity.ScaleToUniform(authoring.duration, authoring.transform.localScale.x)
-                        .To(authoring.uniformScaleTarget)
+                    entity.ScaleToUniform(authoring.uniformScaleTarget, authoring.duration)
+                        .From(authoring.transform.localScale.x)
                         .Ease(authoring.ease)
                         .Loop(authoring.loop)
                         .Play(this);
                     break;
 
                 case ShowcasePreset.SplinePath:
-                    if (authoring.splinePath != null && authoring.splinePath.points != null && authoring.splinePath.points.Length > 0)
+                    if (TryGetSplinePoints(authoring, out var flatPoints))
                     {
-                        authoring.splinePath.ValidatePoints();
-                        float3[] flatPoints = SplineUtility.GetFlatPointsArray<float3, Float3Math>(
-                            authoring.splinePath.splineType,
-                            authoring.splinePath.isClosed,
-                            authoring.splinePath.points,
-                            authoring.splinePath.tangents
-                        );
-
-                        entity.MoveToWorld(authoring.duration, authoring.splinePath.points[0])
-                            .Along(flatPoints, authoring.splinePath.splineType, authoring.splinePath.isClosed)
-                            .Ease(authoring.ease)
-                            .Loop(authoring.loop)
-                            .Visualize()
-                            .Play(this);
+                        using (var nativeFlatPoints = new NativeArray<float3>(flatPoints, Allocator.Temp))
+                        {
+                            entity.MoveToWorld(authoring.splinePath.points[0], authoring.duration)
+                                .Along(nativeFlatPoints, authoring.splinePath.splineType, authoring.splinePath.isClosed)
+                                .Ease(authoring.ease)
+                                .Loop(authoring.loop)
+                                .Visualize()
+                                .Play(this);
+                        }
                     }
                     break;
 
                 case ShowcasePreset.ChaseTarget:
-                    var targetEntity = GetEntity(authoring.chaseTarget, TransformUsageFlags.Dynamic);
-                    if (targetEntity != Entity.Null)
+                    if (TryGetEntity(authoring.chaseTarget, out var chasePositionTarget))
                     {
-                        entity.ChasePosition(targetEntity)
+                        entity.ChasePosition(chasePositionTarget)
                             .SmoothDamp(authoring.chaseSmoothTime)
                             .Play(this);
                     }
                     break;
 
                 case ShowcasePreset.ChasePositionAndRotation:
-                    var chasePoseTarget = GetEntity(authoring.chaseTarget, TransformUsageFlags.Dynamic);
-                    if (chasePoseTarget != Entity.Null)
+                    if (TryGetEntity(authoring.chaseTarget, out var chasePoseTarget))
                     {
                         entity.ChasePositionAndRotation(chasePoseTarget)
                             .SmoothDamp(authoring.chaseSmoothTime)
@@ -175,8 +167,7 @@ namespace Entityween.Samples
                     break;
 
                 case ShowcasePreset.ChasePositionAndLook:
-                    var chaseLookTarget = GetEntity(authoring.chaseTarget, TransformUsageFlags.Dynamic);
-                    if (chaseLookTarget != Entity.Null)
+                    if (TryGetEntity(authoring.chaseTarget, out var chaseLookTarget))
                     {
                         entity.ChasePositionAndLook(chaseLookTarget)
                             .SmoothDamp(authoring.chaseSmoothTime)
@@ -187,16 +178,15 @@ namespace Entityween.Samples
                 case ShowcasePreset.SequenceShowcase:
                     var sequenceStart = (float3)authoring.transform.localPosition;
                     Sequence.Create()
-                        .Append(entity.MoveToLocal(authoring.duration * 0.5f, sequenceStart).To(sequenceStart + authoring.moveOffset).Ease(EaseType.OutQuad))
-                        .Append(entity.RotateToLocal(authoring.duration * 0.5f, quaternion.identity).To(quaternion.RotateY(math.PI)))
-                        .Append(entity.MoveToLocal(authoring.duration * 0.5f, sequenceStart + authoring.moveOffset).To(sequenceStart).Ease(EaseType.InQuad))
+                        .Append(entity.MoveToLocal(sequenceStart + authoring.moveOffset, authoring.duration * 0.5f).From(sequenceStart).Ease(EaseType.OutQuad))
+                        .Append(entity.RotateToLocal(quaternion.RotateY(math.PI), authoring.duration * 0.5f).From(quaternion.identity))
+                        .Append(entity.MoveToLocal(sequenceStart, authoring.duration * 0.5f).From(sequenceStart + authoring.moveOffset).Ease(EaseType.InQuad))
                         .Loop(authoring.loop)
                         .Play(this);
                     break;
 
                 case ShowcasePreset.LookAtTarget:
-                    var lookTargetEntity = GetEntity(authoring.lookTarget, TransformUsageFlags.Dynamic);
-                    if (lookTargetEntity != Entity.Null)
+                    if (TryGetEntity(authoring.lookTarget, out var lookTargetEntity))
                     {
                         entity.Look(lookTargetEntity)
                             .SmoothDamp(authoring.lookSmoothTime)
@@ -204,6 +194,35 @@ namespace Entityween.Samples
                     }
                     break;
             }
+        }
+
+        private bool TryGetEntity(GameObject source, out Entity entity)
+        {
+            entity = source == null
+                ? Entity.Null
+                : GetEntity(source, TransformUsageFlags.Dynamic);
+
+            return entity != Entity.Null;
+        }
+
+        private static bool TryGetSplinePoints(EntityweenShowcaseItem authoring, out float3[] flatPoints)
+        {
+            flatPoints = null;
+            if (authoring.splinePath == null ||
+                authoring.splinePath.points == null ||
+                authoring.splinePath.points.Length == 0)
+            {
+                return false;
+            }
+
+            authoring.splinePath.ValidatePoints();
+            flatPoints = SplineUtility.GetFlatPointsArray<float3, Float3Math>(
+                authoring.splinePath.splineType,
+                authoring.splinePath.isClosed,
+                authoring.splinePath.points,
+                authoring.splinePath.tangents);
+
+            return flatPoints != null && flatPoints.Length > 0;
         }
     }
 }

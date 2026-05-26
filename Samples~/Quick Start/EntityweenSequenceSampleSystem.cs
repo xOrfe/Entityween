@@ -8,7 +8,8 @@ using XO.Entityween;
 namespace Entityween.Samples
 {
     /// <summary>
-    /// Add this tag to an entity with LocalTransform to start the sample sequence once.
+    /// Add this tag to an entity with LocalTransform to play a short timeline.
+    /// A sequence can mix tweens, waits, callbacks, and other timeline actions.
     /// </summary>
     public struct EntityweenSequenceSampleTag : IComponentData
     {
@@ -25,17 +26,19 @@ namespace Entityween.Samples
         {
             var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-            foreach (var (transform, entity) in SystemAPI
+            foreach (var (localTransform, entity) in SystemAPI
                          .Query<RefRO<LocalTransform>>()
                          .WithAll<EntityweenSequenceSampleTag>()
                          .WithEntityAccess())
             {
-                var start = transform.ValueRO.Position;
+                float3 start = localTransform.ValueRO.Position;
+                float3 up = start + new float3(0f, 2f, 0f);
+                float3 right = start + new float3(2f, 2f, 0f);
 
                 Sequence.Create()
-                    .Append(entity.MoveToWorld(start + new float3(0f, 2f, 0f), 0.5f).Ease(EaseType.OutCubic))
-                    .Append(entity.Wait(0.25f))
-                    .Append(entity.MoveToWorld(start + new float3(2f, 2f, 0f), 0.5f).Ease(EaseType.InOutSine))
+                    .Append(entity.MoveToWorld(up, 0.5f).From(start).Ease(EaseType.OutCubic))
+                    .AppendWait(0.25f)
+                    .Append(entity.MoveToWorld(right, 0.5f).From(up).Ease(EaseType.InOutSine))
                     .AppendCallback("SequenceFinished")
                     .Play(ecb);
 

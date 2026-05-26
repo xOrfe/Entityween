@@ -9,16 +9,17 @@ using Unity.Mathematics;
 using XO.Curve;
 using XO.Entityween;
 using Entityween.Samples;
-
+using XO.Entityween.Editor;
 
 namespace Entityween.Editor
 {
     public static class EntityweenShowcaseSceneBuilder
     {
-        [MenuItem("XO/Entityween/Generate Showcase Scene")]
+        [MenuItem("XO/Entityween/Generate Showcase Scene", false, 10)]
         public static void GenerateShowcaseScene()
         {
-            string outputDir = "Assets/Samples/Entityween/1.0.0/Scenes";
+            string version = EntityweenVersionHelper.Version;
+            string outputDir = $"Assets/Samples/Entityween/{version}/Scenes";
             string subSceneDir = $"{outputDir}/SubScenes";
             if (!Directory.Exists(outputDir))
             {
@@ -55,21 +56,19 @@ namespace Entityween.Editor
             }
             EditorSceneManager.SaveScene(mainScene, mainScenePath);
 
-            // Create showcase entities subscene additively
+            // 1. Create Showcase entities SubScene
             var showcaseScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
-            
             BuildShowcaseEntities(showcaseScene, outputDir);
-
             EditorSceneManager.SaveScene(showcaseScene, showcaseSubScenePath);
             EditorSceneManager.CloseScene(showcaseScene, true);
 
-            // Create ease gallery entities subscene additively
+            // 2. Create Ease Gallery entities SubScene
             var easeGalleryScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             BuildEaseGalleryEntities(easeGalleryScene, outputDir);
             EditorSceneManager.SaveScene(easeGalleryScene, easeGallerySubScenePath);
             EditorSceneManager.CloseScene(easeGalleryScene, true);
 
-            // Create benchmark entities subscene additively
+            // 3. Create Benchmark entities SubScene
             var benchmarkScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             BuildBenchmarkEntities(benchmarkScene, outputDir);
             EditorSceneManager.SaveScene(benchmarkScene, benchmarkSubScenePath);
@@ -78,38 +77,67 @@ namespace Entityween.Editor
             // Set main scene active
             EditorSceneManager.SetActiveScene(mainScene);
             
-            // Import asset database to recognize the new subscene asset
+            // Import asset database to recognize the new subscene assets
             AssetDatabase.Refresh();
-            
-            var showcaseSubScene = CreateSubSceneObject("ShowcaseSubScene", showcaseSubScenePath, true);
-            var easeGallerySubScene = CreateSubSceneObject("EaseGallerySubScene", easeGallerySubScenePath, false);
-            var benchmarkSubScene = CreateSubSceneObject("BenchmarkSubScene", benchmarkSubScenePath, false);
 
+            // Create SubScene GameObjects in the main scene (Entities mode)
+            var showcaseSubSceneObj = CreateSubSceneObject("ShowcaseSubScene", showcaseSubScenePath, true);
+            var easeGallerySubSceneObj = CreateSubSceneObject("EaseGallerySubScene", easeGallerySubScenePath, true);
+            var benchmarkSubSceneObj = CreateSubSceneObject("BenchmarkSubScene", benchmarkSubScenePath, true);
+
+            easeGallerySubSceneObj.gameObject.SetActive(false);
+            benchmarkSubSceneObj.gameObject.SetActive(false);
+
+            string matFolder = $"{outputDir}/Materials";
+            string prefabFolder = $"{outputDir}/Prefabs";
+
+            // 4. Create GameObject Mode hierarchies
+            var showcaseRoot = new GameObject("ShowcaseRoot");
+            var easeGalleryRoot = new GameObject("EaseGalleryRoot");
+            var benchmarkRoot = new GameObject("BenchmarkRoot");
+
+            EditorSceneManager.MoveGameObjectToScene(showcaseRoot, mainScene);
+            EditorSceneManager.MoveGameObjectToScene(easeGalleryRoot, mainScene);
+            EditorSceneManager.MoveGameObjectToScene(benchmarkRoot, mainScene);
+
+            BuildShowcaseGameObjects(mainScene, showcaseRoot.transform, matFolder);
+            BuildEaseGalleryGameObjects(mainScene, easeGalleryRoot.transform, matFolder);
+            var goBenchmarkController = BuildBenchmarkGameObjects(mainScene, benchmarkRoot.transform, matFolder, prefabFolder);
+
+            // Shared camera controls
             var runtimeOrbitGo = new GameObject("RuntimeOrbitShowcase");
+            EditorSceneManager.MoveGameObjectToScene(runtimeOrbitGo, mainScene);
             var runtimeOrbit = runtimeOrbitGo.AddComponent<ShowcaseRuntimeOrbit>();
             var cameraRig = runtimeOrbitGo.AddComponent<ShowcaseRuntimeCameraRig>();
 
+
+
+            // Entity benchmark controller
             GameObject benchmarkControllerGo = new GameObject("BenchmarkController");
+            EditorSceneManager.MoveGameObjectToScene(benchmarkControllerGo, mainScene);
             var benchmarkController = benchmarkControllerGo.AddComponent<EntityweenBenchmark>();
             benchmarkController.enabled = false;
 
-            var switcherGo = new GameObject("EntityweenSubSceneSwitcher");
-            var switcher = switcherGo.AddComponent<EntityweenSubSceneSwitcher>();
-            ConfigureSwitcher(switcher, showcaseSubScene, easeGallerySubScene, benchmarkSubScene, runtimeOrbit, cameraRig, benchmarkController);
+            // Set up Switcher
+            var switcherGo = new GameObject("EntityweenShowcaseSwitcher");
+            EditorSceneManager.MoveGameObjectToScene(switcherGo, mainScene);
+            var switcher = switcherGo.AddComponent<EntityweenShowcaseSwitcher>();
 
-            if (easeGallerySubScene != null)
-            {
-                easeGallerySubScene.gameObject.SetActive(false);
-            }
+            ConfigureSwitcher(
+                switcher,
+                showcaseSubSceneObj, easeGallerySubSceneObj, benchmarkSubSceneObj,
+                showcaseRoot, easeGalleryRoot, benchmarkRoot,
+                runtimeOrbit, cameraRig,
+                benchmarkController, goBenchmarkController
+            );
 
-            if (benchmarkSubScene != null)
-            {
-                benchmarkSubScene.gameObject.SetActive(false);
-            }
+            // GameObject roots start deactivated (Switcher defaults to Entities Showcase)
+            showcaseRoot.SetActive(false);
+            easeGalleryRoot.SetActive(false);
+            benchmarkRoot.SetActive(false);
 
-            // Save main scene again with the subscene configured
+            // Save main scene again
             EditorSceneManager.SaveScene(mainScene, mainScenePath);
-
             AssetDatabase.Refresh();
         }
 
@@ -120,8 +148,7 @@ namespace Entityween.Editor
             Material mat = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (mat == null)
             {
-                Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-                if (shader == null) shader = Shader.Find("Standard");
+                Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
                 mat = new Material(shader);
                 mat.SetColor("_BaseColor", color);
                 mat.SetColor("_Color", color);
@@ -159,53 +186,44 @@ namespace Entityween.Editor
             if (groundRenderer != null) groundRenderer.sharedMaterial = groundMat;
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(groundGo, scene);
 
-            var showcaseItems = new System.Collections.Generic.List<GameObject>();
-
-            var moveLocal = CreateShowcaseItem(scene, PrimitiveType.Cube, "MoveLocal_Showcase", new Vector3(-36f, 0.5f, 20f), magentaMat, ShowcasePreset.MoveLocal, "Local Move / PingPong");
+            var moveLocal = CreateShowcaseItemEntity(scene, PrimitiveType.Cube, "MoveLocal_Showcase", new Vector3(-36f, 0.5f, 20f), magentaMat, ShowcasePreset.MoveLocal, "Local Move / PingPong");
             moveLocal.moveOffset = new float3(0f, 4f, 0f);
             moveLocal.duration = 2f;
             moveLocal.ease = EaseType.InOutSine;
-            showcaseItems.Add(moveLocal.gameObject);
 
-            var moveWorld = CreateShowcaseItem(scene, PrimitiveType.Capsule, "MoveWorld_Showcase", new Vector3(-24f, 1f, 20f), cyanMat, ShowcasePreset.MoveWorld, "World Move / FromCurrent");
+            var moveWorld = CreateShowcaseItemEntity(scene, PrimitiveType.Capsule, "MoveWorld_Showcase", new Vector3(-24f, 1f, 20f), cyanMat, ShowcasePreset.MoveWorld, "World Move / FromCurrent");
             moveWorld.moveOffset = new float3(0f, 0f, -5f);
             moveWorld.duration = 2.4f;
             moveWorld.ease = EaseType.OutCubic;
-            showcaseItems.Add(moveWorld.gameObject);
 
-            var moveChase = CreateShowcaseItem(scene, PrimitiveType.Sphere, "MoveTweenChase_Showcase", new Vector3(-12f, 0.8f, 20f), goldMat, ShowcasePreset.MoveWithChase, "Move Tween + Chase settle");
+            var moveChase = CreateShowcaseItemEntity(scene, PrimitiveType.Sphere, "MoveTweenChase_Showcase", new Vector3(-12f, 0.8f, 20f), goldMat, ShowcasePreset.MoveWithChase, "Move Tween + Chase settle");
             moveChase.moveOffset = new float3(0f, 3.5f, 4f);
             moveChase.duration = 2f;
             moveChase.ease = EaseType.OutElastic;
             moveChase.chaseSmoothTime = 0.25f;
-            showcaseItems.Add(moveChase.gameObject);
 
-            var rotateWorld = CreateShowcaseItem(scene, PrimitiveType.Cube, "RotateWorld_Showcase", new Vector3(0f, 0.5f, 20f), orangeMat, ShowcasePreset.RotateWorld, "World Rotate / Repeat");
+            var rotateWorld = CreateShowcaseItemEntity(scene, PrimitiveType.Cube, "RotateWorld_Showcase", new Vector3(0f, 0.5f, 20f), orangeMat, ShowcasePreset.RotateWorld, "World Rotate / Repeat");
             rotateWorld.duration = 2.8f;
             rotateWorld.ease = EaseType.Linear;
             rotateWorld.loop = LoopType.Repeat;
-            rotateWorld.rotationDegrees = new float3(0f, 355f, 0f);
-            showcaseItems.Add(rotateWorld.gameObject);
+            rotateWorld.rotationDegrees = new float3(0f, 178f, 0f);
 
-            var rotateLocal = CreateShowcaseItem(scene, PrimitiveType.Cube, "RotateLocal_Showcase", new Vector3(12f, 0.5f, 20f), purpleMat, ShowcasePreset.RotateLocal, "Local Rotate / InOutBack");
+            var rotateLocal = CreateShowcaseItemEntity(scene, PrimitiveType.Cube, "RotateLocal_Showcase", new Vector3(12f, 0.5f, 20f), purpleMat, ShowcasePreset.RotateLocal, "Local Rotate / InOutBack");
             rotateLocal.duration = 2f;
             rotateLocal.ease = EaseType.InOutBack;
             rotateLocal.rotationDegrees = new float3(65f, 210f, 25f);
-            showcaseItems.Add(rotateLocal.gameObject);
 
-            var scale = CreateShowcaseItem(scene, PrimitiveType.Cylinder, "ScaleVector_Showcase", new Vector3(24f, 1f, 20f), limeMat, ShowcasePreset.ScalePingPong, "Scale Vector / Back ease");
+            var scale = CreateShowcaseItemEntity(scene, PrimitiveType.Cylinder, "ScaleVector_Showcase", new Vector3(24f, 1f, 20f), limeMat, ShowcasePreset.ScalePingPong, "Scale Vector / Back ease");
             scale.duration = 1.5f;
             scale.ease = EaseType.InOutBack;
             scale.scaleTarget = new float3(2.1f);
-            showcaseItems.Add(scale.gameObject);
 
-            var uniformScale = CreateShowcaseItem(scene, PrimitiveType.Sphere, "ScaleUniform_Showcase", new Vector3(36f, 0.8f, 20f), yellowMat, ShowcasePreset.ScaleUniform, "Uniform Scale / Bounce");
+            var uniformScale = CreateShowcaseItemEntity(scene, PrimitiveType.Sphere, "ScaleUniform_Showcase", new Vector3(36f, 0.8f, 20f), yellowMat, ShowcasePreset.ScaleUniform, "Uniform Scale / Bounce");
             uniformScale.duration = 1.6f;
             uniformScale.ease = EaseType.OutBounce;
             uniformScale.uniformScaleTarget = 2.2f;
-            showcaseItems.Add(uniformScale.gameObject);
 
-            var closedSpline = CreateShowcaseItem(scene, PrimitiveType.Capsule, "SplineClosed_Showcase", new Vector3(-30f, 3f, 5f), orangeMat, ShowcasePreset.SplinePath, "Closed CatmullRom spline");
+            var closedSpline = CreateShowcaseItemEntity(scene, PrimitiveType.Capsule, "SplineClosed_Showcase", new Vector3(-30f, 3f, 5f), orangeMat, ShowcasePreset.SplinePath, "Closed CatmullRom spline");
             closedSpline.duration = 4f;
             closedSpline.ease = EaseType.Linear;
             closedSpline.loop = LoopType.Repeat;
@@ -214,9 +232,8 @@ namespace Entityween.Editor
                 new float3(-27f, 5f, 8f),
                 new float3(-23f, 3f, 5f),
                 new float3(-27f, 2.6f, 2f));
-            showcaseItems.Add(closedSpline.gameObject);
 
-            var bezierSpline = CreateShowcaseItem(scene, PrimitiveType.Capsule, "SplineBezier_Showcase", new Vector3(-12f, 3f, 5f), redMat, ShowcasePreset.SplinePath, "Open Cubic Bezier spline");
+            var bezierSpline = CreateShowcaseItemEntity(scene, PrimitiveType.Capsule, "SplineBezier_Showcase", new Vector3(-12f, 3f, 5f), redMat, ShowcasePreset.SplinePath, "Open Cubic Bezier spline");
             bezierSpline.duration = 3.2f;
             bezierSpline.ease = EaseType.InOutSine;
             bezierSpline.splinePath = CreateSpline(SplineType.CubicBezier, false,
@@ -224,9 +241,8 @@ namespace Entityween.Editor
                 new float3(-8f, 6f, 8f),
                 new float3(-3f, 2.8f, 3f),
                 new float3(1f, 4.8f, 6f));
-            showcaseItems.Add(bezierSpline.gameObject);
 
-            var stepSpline = CreateShowcaseItem(scene, PrimitiveType.Cube, "SplineStep_Showcase", new Vector3(9f, 3f, 5f), blueMat, ShowcasePreset.SplinePath, "Step spline path");
+            var stepSpline = CreateShowcaseItemEntity(scene, PrimitiveType.Cube, "SplineStep_Showcase", new Vector3(9f, 3f, 5f), blueMat, ShowcasePreset.SplinePath, "Step spline path");
             stepSpline.duration = 3f;
             stepSpline.ease = EaseType.Linear;
             stepSpline.splinePath = CreateSpline(SplineType.Step, false,
@@ -234,75 +250,58 @@ namespace Entityween.Editor
                 new float3(13f, 5.5f, 5f),
                 new float3(17f, 3f, 8f),
                 new float3(21f, 4.5f, 3f));
-            showcaseItems.Add(stepSpline.gameObject);
 
-            var bounceMove = CreateShowcaseItem(scene, PrimitiveType.Sphere, "EaseBounce_Showcase", new Vector3(33f, 0.8f, 5f), magentaMat, ShowcasePreset.MoveWorld, "OutBounce move");
+            var bounceMove = CreateShowcaseItemEntity(scene, PrimitiveType.Sphere, "EaseBounce_Showcase", new Vector3(33f, 0.8f, 5f), magentaMat, ShowcasePreset.MoveWorld, "OutBounce move");
             bounceMove.moveOffset = new float3(0f, 5f, 0f);
             bounceMove.duration = 1.8f;
             bounceMove.ease = EaseType.OutBounce;
-            showcaseItems.Add(bounceMove.gameObject);
 
-            var chaseTarget = CreateShowcaseItem(scene, PrimitiveType.Cube, "ChaseTarget_Obj", new Vector3(-33f, 0.5f, -10f), purpleMat, ShowcasePreset.MoveLocal, "Moving chase target");
+            var chaseTarget = CreateShowcaseItemEntity(scene, PrimitiveType.Cube, "ChaseTarget_Obj", new Vector3(-33f, 0.5f, -10f), purpleMat, ShowcasePreset.MoveLocal, "Moving chase target");
             chaseTarget.moveOffset = new float3(0f, 0f, -7f);
             chaseTarget.duration = 3f;
             chaseTarget.ease = EaseType.InOutQuad;
 
-            var chaser = CreateShowcaseItem(scene, PrimitiveType.Sphere, "ChasePosition_Showcase", new Vector3(-33f, 0.6f, -15f), goldMat, ShowcasePreset.ChaseTarget, "ChasePosition entity");
+            var chaser = CreateShowcaseItemEntity(scene, PrimitiveType.Sphere, "ChasePosition_Showcase", new Vector3(-33f, 0.6f, -15f), goldMat, ShowcasePreset.ChaseTarget, "ChasePosition entity");
             chaser.transform.localScale = new Vector3(0.75f, 0.75f, 0.75f);
             chaser.chaseTarget = chaseTarget.gameObject;
             chaser.chaseSmoothTime = 0.3f;
-            showcaseItems.Add(chaseTarget.gameObject);
-            showcaseItems.Add(chaser.gameObject);
 
-            var poseTarget = CreateShowcaseItem(scene, PrimitiveType.Cube, "ChasePose_Target", new Vector3(-10f, 0.5f, -10f), cyanMat, ShowcasePreset.SequenceShowcase, "Moving pose target");
+            var poseTarget = CreateShowcaseItemEntity(scene, PrimitiveType.Cube, "ChasePose_Target", new Vector3(-10f, 0.5f, -10f), cyanMat, ShowcasePreset.SequenceShowcase, "Moving pose target");
             poseTarget.duration = 2.6f;
             poseTarget.ease = EaseType.InOutSine;
             poseTarget.loop = LoopType.PingPong;
             poseTarget.moveOffset = new float3(0f, 3f, -5f);
 
-            var poseChaser = CreateShowcaseItem(scene, PrimitiveType.Capsule, "ChasePositionRotation_Showcase", new Vector3(-10f, 1f, -16f), limeMat, ShowcasePreset.ChasePositionAndRotation, "Chase position + rotation");
+            var poseChaser = CreateShowcaseItemEntity(scene, PrimitiveType.Capsule, "ChasePositionRotation_Showcase", new Vector3(-10f, 1f, -16f), limeMat, ShowcasePreset.ChasePositionAndRotation, "Chase position + rotation");
             poseChaser.chaseTarget = poseTarget.gameObject;
             poseChaser.chaseSmoothTime = 0.35f;
-            showcaseItems.Add(poseTarget.gameObject);
-            showcaseItems.Add(poseChaser.gameObject);
 
-            var lookTargetGo = CreateShowcaseItem(scene, PrimitiveType.Sphere, "LookTarget_Obj", new Vector3(12f, 1f, -10f), yellowMat, ShowcasePreset.MoveLocal, "Moving look target");
+            var lookTargetGo = CreateShowcaseItemEntity(scene, PrimitiveType.Sphere, "LookTarget_Obj", new Vector3(12f, 1f, -10f), yellowMat, ShowcasePreset.MoveLocal, "Moving look target");
             lookTargetGo.moveOffset = new float3(6f, 0f, 0f);
             lookTargetGo.duration = 2.5f;
             lookTargetGo.ease = EaseType.InOutQuad;
 
-            var lookChaser = CreateShowcaseItem(scene, PrimitiveType.Cube, "LookAt_Showcase", new Vector3(15f, 1f, -16f), redMat, ShowcasePreset.LookAtTarget, "Look at target");
+            var lookChaser = CreateShowcaseItemEntity(scene, PrimitiveType.Cube, "LookAt_Showcase", new Vector3(15f, 1f, -16f), redMat, ShowcasePreset.LookAtTarget, "Look at target");
             lookChaser.transform.localScale = new Vector3(0.5f, 0.5f, 2.5f);
             lookChaser.lookTarget = lookTargetGo.gameObject;
             lookChaser.lookSmoothTime = 0.15f;
-            showcaseItems.Add(lookTargetGo.gameObject);
-            showcaseItems.Add(lookChaser.gameObject);
 
-            var chaseLook = CreateShowcaseItem(scene, PrimitiveType.Capsule, "ChasePositionLook_Showcase", new Vector3(30f, 1f, -16f), blueMat, ShowcasePreset.ChasePositionAndLook, "Chase position + look");
+            var chaseLook = CreateShowcaseItemEntity(scene, PrimitiveType.Capsule, "ChasePositionLook_Showcase", new Vector3(30f, 1f, -16f), blueMat, ShowcasePreset.ChasePositionAndLook, "Chase position + look");
             chaseLook.chaseTarget = lookTargetGo.gameObject;
             chaseLook.chaseSmoothTime = 0.4f;
-            showcaseItems.Add(chaseLook.gameObject);
 
-            var sequence = CreateShowcaseItem(scene, PrimitiveType.Cube, "Sequence_Showcase", new Vector3(-18f, 0.5f, -29f), blueMat, ShowcasePreset.SequenceShowcase, "Sequence / Move-Rotate-Move");
+            var sequence = CreateShowcaseItemEntity(scene, PrimitiveType.Cube, "Sequence_Showcase", new Vector3(-18f, 0.5f, -29f), blueMat, ShowcasePreset.SequenceShowcase, "Sequence / Move-Rotate-Move");
             sequence.moveOffset = new float3(0f, 4f, 0f);
             sequence.duration = 3f;
             sequence.loop = LoopType.PingPong;
-            showcaseItems.Add(sequence.gameObject);
 
-            var lookTargetGoObj = new GameObject("CameraLookTarget");
-            lookTargetGoObj.transform.position = Vector3.zero;
-            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(lookTargetGoObj, scene);
-
+            // Camera target entity helper
             var cameraTargetGo = new GameObject("ShowcaseCameraTarget");
             cameraTargetGo.transform.position = new Vector3(0f, 18f, -38f);
             var cameraAuthoring = cameraTargetGo.AddComponent<ShowcaseCameraAuthoring>();
-            cameraAuthoring.lookTargetObject = lookTargetGoObj;
-            cameraAuthoring.showcaseItems.AddRange(showcaseItems);
-
             cameraAuthoring.moveDuration = 48f;
             cameraAuthoring.lookHoldDuration = 3.2f;
             cameraAuthoring.lookTransitionDuration = 1.5f;
-
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(cameraTargetGo, scene);
         }
 
@@ -323,7 +322,7 @@ namespace Entityween.Editor
             const int columns = 8;
             const float spacingX = 10f;
             const float spacingZ = 8f;
-            const float moveDistance = 5.5f;
+            const float bounceHeight = 3.2f;
             float hueStep = 1f / Mathf.Max(1, easeTypes.Length);
 
             for (int i = 0; i < easeTypes.Length; i++)
@@ -333,65 +332,15 @@ namespace Entityween.Editor
                 int row = i / columns;
                 float x = (column - (columns - 1) * 0.5f) * spacingX;
                 float z = (1.5f - row) * spacingZ;
-                float direction = i % 2 == 0 ? 1f : -1f;
 
-                var material = GetOrCreateMaterial(
-                    matFolder,
-                    $"Ease_{easeType}",
-                    Color.HSVToRGB(i * hueStep, 0.78f, 0.95f));
+                var material = GetOrCreateMaterial(matFolder, $"Ease_{easeType}", Color.HSVToRGB(i * hueStep, 0.78f, 0.95f));
 
-                var item = CreateShowcaseItem(
-                    scene,
-                    PrimitiveType.Sphere,
-                    $"Ease_{i:00}_{easeType}",
-                    new Vector3(x, 0.85f, z),
-                    material,
-                    ShowcasePreset.MoveWorld,
-                    easeType.ToString());
-
-                item.moveOffset = new float3(direction * moveDistance, 0f, 0f);
+                var item = CreateShowcaseItemEntity(scene, PrimitiveType.Sphere, $"Ease_{i:00}_{easeType}", new Vector3(x, 0.85f, z), material, ShowcasePreset.MoveWorld, easeType.ToString());
+                item.moveOffset = new float3(0f, bounceHeight, 0f);
                 item.duration = 2f;
                 item.ease = easeType;
                 item.loop = LoopType.PingPong;
             }
-        }
-
-        private static EntityweenShowcaseItem CreateShowcaseItem(
-            UnityEngine.SceneManagement.Scene scene,
-            PrimitiveType primitiveType,
-            string name,
-            Vector3 position,
-            Material material,
-            ShowcasePreset preset,
-            string description)
-        {
-            var go = GameObject.CreatePrimitive(primitiveType);
-            go.name = name;
-            go.transform.position = position;
-            var renderer = go.GetComponent<Renderer>();
-            if (renderer != null) renderer.sharedMaterial = material;
-
-            var item = go.AddComponent<EntityweenShowcaseItem>();
-            item.description = description;
-            item.preset = preset;
-            item.duration = 2f;
-            item.ease = EaseType.InOutSine;
-            item.loop = LoopType.PingPong;
-
-            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, scene);
-            return item;
-        }
-
-        private static SerializableSpline<float3> CreateSpline(SplineType splineType, bool isClosed, params float3[] points)
-        {
-            var spline = new SerializableSpline<float3>
-            {
-                splineType = splineType,
-                isClosed = isClosed,
-                points = points
-            };
-            spline.ValidatePoints();
-            return spline;
         }
 
         private static void BuildBenchmarkEntities(UnityEngine.SceneManagement.Scene scene, string outputDir)
@@ -426,6 +375,253 @@ namespace Entityween.Editor
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(benchmarkSettingsGo, scene);
         }
 
+        private static void BuildShowcaseGameObjects(UnityEngine.SceneManagement.Scene scene, Transform parent, string matFolder)
+        {
+            var magentaMat = GetOrCreateMaterial(matFolder, "Magenta", new Color(0.9f, 0.1f, 0.6f));
+            var cyanMat = GetOrCreateMaterial(matFolder, "Cyan", new Color(0f, 0.7f, 0.9f));
+            var limeMat = GetOrCreateMaterial(matFolder, "LimeGreen", new Color(0.3f, 0.85f, 0.2f));
+            var orangeMat = GetOrCreateMaterial(matFolder, "Orange", new Color(0.95f, 0.5f, 0.1f));
+            var purpleMat = GetOrCreateMaterial(matFolder, "Purple", new Color(0.55f, 0.2f, 0.85f));
+            var goldMat = GetOrCreateMaterial(matFolder, "Gold", new Color(0.85f, 0.65f, 0.1f));
+            var yellowMat = GetOrCreateMaterial(matFolder, "Yellow", new Color(0.9f, 0.9f, 0f));
+            var redMat = GetOrCreateMaterial(matFolder, "Red", new Color(0.9f, 0.1f, 0.15f));
+            var blueMat = GetOrCreateMaterial(matFolder, "Blue", new Color(0.1f, 0.4f, 0.9f));
+
+            var groundGo = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            groundGo.name = "Ground";
+            groundGo.transform.SetParent(parent, false);
+            groundGo.transform.position = new Vector3(0f, 0f, 0f);
+            groundGo.transform.localScale = new Vector3(9f, 1f, 9f);
+            var groundMat = GetOrCreateMaterial(matFolder, "DarkGround", new Color(0.12f, 0.12f, 0.14f));
+            var groundRenderer = groundGo.GetComponent<Renderer>();
+            if (groundRenderer != null) groundRenderer.sharedMaterial = groundMat;
+
+            var moveLocal = CreateShowcaseItemGameObject(scene, PrimitiveType.Cube, "MoveLocal_Showcase_GO", new Vector3(-36f, 0.5f, 20f), magentaMat, ShowcasePreset.MoveLocal, "Local Move / PingPong (GO)", parent);
+            moveLocal.moveOffset = new float3(0f, 4f, 0f);
+            moveLocal.duration = 2f;
+            moveLocal.ease = EaseType.InOutSine;
+
+            var moveWorld = CreateShowcaseItemGameObject(scene, PrimitiveType.Capsule, "MoveWorld_Showcase_GO", new Vector3(-24f, 1f, 20f), cyanMat, ShowcasePreset.MoveWorld, "World Move / FromCurrent (GO)", parent);
+            moveWorld.moveOffset = new float3(0f, 0f, -5f);
+            moveWorld.duration = 2.4f;
+            moveWorld.ease = EaseType.OutCubic;
+
+            var moveChase = CreateShowcaseItemGameObject(scene, PrimitiveType.Sphere, "MoveTweenChase_Showcase_GO", new Vector3(-12f, 0.8f, 20f), goldMat, ShowcasePreset.MoveWithChase, "Move Tween + Chase settle (GO)", parent);
+            moveChase.moveOffset = new float3(0f, 3.5f, 4f);
+            moveChase.duration = 2f;
+            moveChase.ease = EaseType.OutElastic;
+            moveChase.chaseSmoothTime = 0.25f;
+
+            var rotateWorld = CreateShowcaseItemGameObject(scene, PrimitiveType.Cube, "RotateWorld_Showcase_GO", new Vector3(0f, 0.5f, 20f), orangeMat, ShowcasePreset.RotateWorld, "World Rotate / Repeat (GO)", parent);
+            rotateWorld.duration = 2.8f;
+            rotateWorld.ease = EaseType.Linear;
+            rotateWorld.loop = LoopType.Repeat;
+            rotateWorld.rotationDegrees = new float3(0f, 178f, 0f);
+
+            var rotateLocal = CreateShowcaseItemGameObject(scene, PrimitiveType.Cube, "RotateLocal_Showcase_GO", new Vector3(12f, 0.5f, 20f), purpleMat, ShowcasePreset.RotateLocal, "Local Rotate / InOutBack (GO)", parent);
+            rotateLocal.duration = 2f;
+            rotateLocal.ease = EaseType.InOutBack;
+            rotateLocal.rotationDegrees = new float3(65f, 210f, 25f);
+
+            var scale = CreateShowcaseItemGameObject(scene, PrimitiveType.Cylinder, "ScaleVector_Showcase_GO", new Vector3(24f, 1f, 20f), limeMat, ShowcasePreset.ScalePingPong, "Scale Vector / Back ease (GO)", parent);
+            scale.duration = 1.5f;
+            scale.ease = EaseType.InOutBack;
+            scale.scaleTarget = new float3(2.1f);
+
+            var uniformScale = CreateShowcaseItemGameObject(scene, PrimitiveType.Sphere, "ScaleUniform_Showcase_GO", new Vector3(36f, 0.8f, 20f), yellowMat, ShowcasePreset.ScaleUniform, "Uniform Scale / Bounce (GO)", parent);
+            uniformScale.duration = 1.6f;
+            uniformScale.ease = EaseType.OutBounce;
+            uniformScale.uniformScaleTarget = 2.2f;
+
+            var closedSpline = CreateShowcaseItemGameObject(scene, PrimitiveType.Capsule, "SplineClosed_Showcase_GO", new Vector3(-30f, 3f, 5f), orangeMat, ShowcasePreset.SplinePath, "Closed CatmullRom spline (GO)", parent);
+            closedSpline.duration = 4f;
+            closedSpline.ease = EaseType.Linear;
+            closedSpline.loop = LoopType.Repeat;
+            closedSpline.splinePath = CreateSpline(SplineType.CatmullRom, true,
+                new float3(-30f, 3f, 5f),
+                new float3(-27f, 5f, 8f),
+                new float3(-23f, 3f, 5f),
+                new float3(-27f, 2.6f, 2f));
+
+            var bezierSpline = CreateShowcaseItemGameObject(scene, PrimitiveType.Capsule, "SplineBezier_Showcase_GO", new Vector3(-12f, 3f, 5f), redMat, ShowcasePreset.SplinePath, "Open Cubic Bezier spline (GO)", parent);
+            bezierSpline.duration = 3.2f;
+            bezierSpline.ease = EaseType.InOutSine;
+            bezierSpline.splinePath = CreateSpline(SplineType.CubicBezier, false,
+                new float3(-12f, 3f, 5f),
+                new float3(-8f, 6f, 8f),
+                new float3(-3f, 2.8f, 3f),
+                new float3(1f, 4.8f, 6f));
+
+            var stepSpline = CreateShowcaseItemGameObject(scene, PrimitiveType.Cube, "SplineStep_Showcase_GO", new Vector3(9f, 3f, 5f), blueMat, ShowcasePreset.SplinePath, "Step spline path (GO)", parent);
+            stepSpline.duration = 3f;
+            stepSpline.ease = EaseType.Linear;
+            stepSpline.splinePath = CreateSpline(SplineType.Step, false,
+                new float3(9f, 3f, 5f),
+                new float3(13f, 5.5f, 5f),
+                new float3(17f, 3f, 8f),
+                new float3(21f, 4.5f, 3f));
+
+            var bounceMove = CreateShowcaseItemGameObject(scene, PrimitiveType.Sphere, "EaseBounce_Showcase_GO", new Vector3(33f, 0.8f, 5f), magentaMat, ShowcasePreset.MoveWorld, "OutBounce move (GO)", parent);
+            bounceMove.moveOffset = new float3(0f, 5f, 0f);
+            bounceMove.duration = 1.8f;
+            bounceMove.ease = EaseType.OutBounce;
+
+            var chaseTarget = CreateShowcaseItemGameObject(scene, PrimitiveType.Cube, "ChaseTarget_Obj_GO", new Vector3(-33f, 0.5f, -10f), purpleMat, ShowcasePreset.MoveLocal, "Moving chase target (GO)", parent);
+            chaseTarget.moveOffset = new float3(0f, 0f, -7f);
+            chaseTarget.duration = 3f;
+            chaseTarget.ease = EaseType.InOutQuad;
+
+            var chaser = CreateShowcaseItemGameObject(scene, PrimitiveType.Sphere, "ChasePosition_Showcase_GO", new Vector3(-33f, 0.6f, -15f), goldMat, ShowcasePreset.ChaseTarget, "ChasePosition GO", parent);
+            chaser.transform.localScale = new Vector3(0.75f, 0.75f, 0.75f);
+            chaser.chaseTarget = chaseTarget.gameObject;
+            chaser.chaseSmoothTime = 0.3f;
+
+            var poseTarget = CreateShowcaseItemGameObject(scene, PrimitiveType.Cube, "ChasePose_Target_GO", new Vector3(-10f, 0.5f, -10f), cyanMat, ShowcasePreset.SequenceShowcase, "Moving pose target (GO)", parent);
+            poseTarget.duration = 2.6f;
+            poseTarget.ease = EaseType.InOutSine;
+            poseTarget.loop = LoopType.PingPong;
+            poseTarget.moveOffset = new float3(0f, 3f, -5f);
+
+            var poseChaser = CreateShowcaseItemGameObject(scene, PrimitiveType.Capsule, "ChasePositionRotation_Showcase_GO", new Vector3(-10f, 1f, -16f), limeMat, ShowcasePreset.ChasePositionAndRotation, "Chase position + rotation (GO)", parent);
+            poseChaser.chaseTarget = poseTarget.gameObject;
+            poseChaser.chaseSmoothTime = 0.35f;
+
+            var lookTargetGo = CreateShowcaseItemGameObject(scene, PrimitiveType.Sphere, "LookTarget_Obj_GO", new Vector3(12f, 1f, -10f), yellowMat, ShowcasePreset.MoveLocal, "Moving look target (GO)", parent);
+            lookTargetGo.moveOffset = new float3(6f, 0f, 0f);
+            lookTargetGo.duration = 2.5f;
+            lookTargetGo.ease = EaseType.InOutQuad;
+
+            var lookChaser = CreateShowcaseItemGameObject(scene, PrimitiveType.Cube, "LookAt_Showcase_GO", new Vector3(15f, 1f, -16f), redMat, ShowcasePreset.LookAtTarget, "Look at target (GO)", parent);
+            lookChaser.transform.localScale = new Vector3(0.5f, 0.5f, 2.5f);
+            lookChaser.lookTarget = lookTargetGo.gameObject;
+            lookChaser.lookSmoothTime = 0.15f;
+
+            var chaseLook = CreateShowcaseItemGameObject(scene, PrimitiveType.Capsule, "ChasePositionLook_Showcase_GO", new Vector3(30f, 1f, -16f), blueMat, ShowcasePreset.ChasePositionAndLook, "Chase position + look (GO)", parent);
+            chaseLook.chaseTarget = lookTargetGo.gameObject;
+            chaseLook.chaseSmoothTime = 0.4f;
+
+            var sequence = CreateShowcaseItemGameObject(scene, PrimitiveType.Cube, "Sequence_Showcase_GO", new Vector3(-18f, 0.5f, -29f), blueMat, ShowcasePreset.SequenceShowcase, "Sequence / Move-Rotate-Move (GO)", parent);
+            sequence.moveOffset = new float3(0f, 4f, 0f);
+            sequence.duration = 3f;
+            sequence.loop = LoopType.PingPong;
+        }
+
+        private static void BuildEaseGalleryGameObjects(UnityEngine.SceneManagement.Scene scene, Transform parent, string matFolder)
+        {
+            var groundGo = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            groundGo.name = "EaseGalleryGround";
+            groundGo.transform.SetParent(parent, false);
+            groundGo.transform.position = new Vector3(0f, 0f, 0f);
+            groundGo.transform.localScale = new Vector3(9f, 1f, 5f);
+            var groundMat = GetOrCreateMaterial(matFolder, "DarkGround", new Color(0.12f, 0.12f, 0.14f));
+            var groundRenderer = groundGo.GetComponent<Renderer>();
+            if (groundRenderer != null) groundRenderer.sharedMaterial = groundMat;
+
+            var easeGalleryGo = new GameObject("EaseGalleryController");
+            easeGalleryGo.transform.SetParent(parent, false);
+            easeGalleryGo.AddComponent<GameObjectEaseGallery>();
+        }
+
+        private static GameObjectBenchmark BuildBenchmarkGameObjects(UnityEngine.SceneManagement.Scene scene, Transform parent, string matFolder, string prefabFolder)
+        {
+            if (!Directory.Exists(prefabFolder)) Directory.CreateDirectory(prefabFolder);
+
+            string prefabPath = $"{prefabFolder}/BenchmarkCube.prefab";
+            GameObject cubePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (cubePrefab == null)
+            {
+                GameObject tempCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                tempCube.name = "BenchmarkCube";
+                var cubeMat = GetOrCreateMaterial(matFolder, "BenchmarkCyan", new Color(0f, 0.7f, 0.9f));
+                var cubeRenderer = tempCube.GetComponent<Renderer>();
+                if (cubeRenderer != null) cubeRenderer.sharedMaterial = cubeMat;
+                cubePrefab = PrefabUtility.SaveAsPrefabAsset(tempCube, prefabPath);
+                GameObject.DestroyImmediate(tempCube);
+            }
+
+            var groundGo = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            groundGo.name = "BenchmarkGround";
+            groundGo.transform.SetParent(parent, false);
+            groundGo.transform.position = new Vector3(0f, 0f, 0f);
+            groundGo.transform.localScale = new Vector3(30f, 1f, 30f);
+            var groundMat = GetOrCreateMaterial(matFolder, "DarkGround", new Color(0.12f, 0.12f, 0.14f));
+            var groundRenderer = groundGo.GetComponent<Renderer>();
+            if (groundRenderer != null) groundRenderer.sharedMaterial = groundMat;
+
+            GameObject benchmarkControllerGo = new GameObject("BenchmarkControllerGO");
+            benchmarkControllerGo.transform.SetParent(parent, false);
+            var benchmarkController = benchmarkControllerGo.AddComponent<GameObjectBenchmark>();
+            benchmarkController.prefab = cubePrefab;
+            benchmarkController.enabled = false;
+
+            return benchmarkController;
+        }
+
+        private static EntityweenShowcaseItem CreateShowcaseItemEntity(
+            UnityEngine.SceneManagement.Scene scene,
+            PrimitiveType primitiveType,
+            string name,
+            Vector3 position,
+            Material material,
+            ShowcasePreset preset,
+            string description)
+        {
+            var go = GameObject.CreatePrimitive(primitiveType);
+            go.name = name;
+            go.transform.position = position;
+            var renderer = go.GetComponent<Renderer>();
+            if (renderer != null) renderer.sharedMaterial = material;
+
+            var item = go.AddComponent<EntityweenShowcaseItem>();
+            item.description = description;
+            item.preset = preset;
+            item.duration = 2f;
+            item.ease = EaseType.InOutSine;
+            item.loop = LoopType.PingPong;
+
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, scene);
+            return item;
+        }
+
+        private static GameObjectShowcaseItem CreateShowcaseItemGameObject(
+            UnityEngine.SceneManagement.Scene scene,
+            PrimitiveType primitiveType,
+            string name,
+            Vector3 position,
+            Material material,
+            ShowcasePreset preset,
+            string description,
+            Transform parent)
+        {
+            var go = GameObject.CreatePrimitive(primitiveType);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.position = position;
+            var renderer = go.GetComponent<Renderer>();
+            if (renderer != null) renderer.sharedMaterial = material;
+
+            var item = go.AddComponent<GameObjectShowcaseItem>();
+            item.description = description;
+            item.preset = preset;
+            item.duration = 2f;
+            item.ease = EaseType.InOutSine;
+            item.loop = LoopType.PingPong;
+
+            return item;
+        }
+
+        private static SerializableSpline<float3> CreateSpline(SplineType splineType, bool isClosed, params float3[] points)
+        {
+            var spline = new SerializableSpline<float3>
+            {
+                splineType = splineType,
+                isClosed = isClosed,
+                points = points
+            };
+            spline.ValidatePoints();
+            return spline;
+        }
+
         private static SubScene CreateSubSceneObject(string name, string scenePath, bool autoLoad)
         {
             GameObject subSceneGo = new GameObject(name);
@@ -446,18 +642,26 @@ namespace Entityween.Editor
         }
 
         private static void ConfigureSwitcher(
-            EntityweenSubSceneSwitcher switcher,
+            EntityweenShowcaseSwitcher switcher,
             SubScene showcaseSubScene,
             SubScene easeGallerySubScene,
             SubScene benchmarkSubScene,
+            GameObject showcaseRoot,
+            GameObject easeGalleryRoot,
+            GameObject benchmarkRoot,
             ShowcaseRuntimeOrbit runtimeOrbit,
             ShowcaseRuntimeCameraRig cameraRig,
-            EntityweenBenchmark benchmarkController)
+            EntityweenBenchmark benchmarkController,
+            GameObjectBenchmark goBenchmarkController)
         {
             var serialized = new SerializedObject(switcher);
             serialized.FindProperty("showcaseSubScene").objectReferenceValue = showcaseSubScene;
             serialized.FindProperty("easeGallerySubScene").objectReferenceValue = easeGallerySubScene;
             serialized.FindProperty("benchmarkSubScene").objectReferenceValue = benchmarkSubScene;
+
+            serialized.FindProperty("showcaseRoot").objectReferenceValue = showcaseRoot;
+            serialized.FindProperty("easeGalleryRoot").objectReferenceValue = easeGalleryRoot;
+            serialized.FindProperty("benchmarkRoot").objectReferenceValue = benchmarkRoot;
 
             var showcaseBehaviours = serialized.FindProperty("showcaseBehaviours");
             showcaseBehaviours.arraySize = 2;
@@ -467,6 +671,10 @@ namespace Entityween.Editor
             var benchmarkBehaviours = serialized.FindProperty("benchmarkBehaviours");
             benchmarkBehaviours.arraySize = 1;
             benchmarkBehaviours.GetArrayElementAtIndex(0).objectReferenceValue = benchmarkController;
+
+            var goBenchmarkBehaviours = serialized.FindProperty("goBenchmarkBehaviours");
+            goBenchmarkBehaviours.arraySize = 1;
+            goBenchmarkBehaviours.GetArrayElementAtIndex(0).objectReferenceValue = goBenchmarkController;
 
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
@@ -575,11 +783,15 @@ namespace Entityween.Editor
             string[] legacyFiles =
             {
                 "EntityweenBenchmark.unity",
+                "EntityweenBenchmark.meta",
                 "EntityweenBenchmark.unity.meta",
                 "EntityweenBenchmark_Entities.unity",
                 "EntityweenBenchmark_Entities.unity.meta",
                 "EntityweenShowcase_Entities.unity",
-                "EntityweenShowcase_Entities.unity.meta"
+                "EntityweenShowcase_Entities.unity.meta",
+                "EntityweenGameObjectShowcase.unity",
+                "EntityweenGameObjectShowcase.unity.meta",
+                "EntityweenGameObjectShowcase.meta"
             };
 
             foreach (var fileName in legacyFiles)

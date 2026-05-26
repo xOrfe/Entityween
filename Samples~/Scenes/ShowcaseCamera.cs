@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -77,7 +78,7 @@ namespace Entityween.Samples
                 }
             }
 
-            // 1. Setup camera movement along a circular path above the ground
+            // The camera itself loops around the whole showcase.
             float3[] pathPoints = new float3[]
             {
                 new float3(0f, 14f, -28f),
@@ -88,18 +89,20 @@ namespace Entityween.Samples
                 new float3(24f, 12f, -12f)
             };
 
-            cameraEntity.MoveToWorld(authoring.moveDuration, pathPoints[0])
-                .Along(pathPoints, SplineType.CatmullRom, isClosed: true)
-                .Ease(EaseType.Linear)
-                .Loop(LoopType.Repeat)
-                .Play(this);
+            using (var nativePathPoints = new NativeArray<float3>(pathPoints, Allocator.Temp))
+            {
+                cameraEntity.MoveToWorld(pathPoints[0], authoring.moveDuration)
+                    .Along(nativePathPoints, SplineType.CatmullRom, isClosed: true)
+                    .Ease(EaseType.Linear)
+                    .Loop(LoopType.Repeat)
+                    .Play(this);
+            }
 
-            // 2. Setup camera to look at the lookTargetEntity using SmoothDamp
+            // A separate look target lets the camera smoothly move focus item by item.
             cameraEntity.Look(lookTargetEntity)
                 .SmoothDamp(0.6f)
                 .Play(this);
 
-            // 3. Setup a sequence on the lookTargetEntity to transition between the items
             if (authoring.showcaseItems == null || authoring.showcaseItems.Count == 0) return;
 
             var seq = Sequence.Create();
@@ -121,7 +124,7 @@ namespace Entityween.Samples
                     seq.Append(lookTargetEntity.MoveToWorld(itemPos, authoring.lookTransitionDuration).Ease(EaseType.InOutSine));
                 }
                 // Hold focus on the item
-                seq.Append(lookTargetEntity.Wait(authoring.lookHoldDuration));
+                seq.AppendWait(authoring.lookHoldDuration);
             }
 
             seq.Loop(LoopType.Repeat)

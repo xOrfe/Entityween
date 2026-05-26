@@ -1,21 +1,13 @@
+using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Collections;
 using UnityEngine;
 using XO.Curve;
 using XO.Entityween;
-using Unity.Transforms;
 
 namespace Entityween.Samples
 {
-    public struct BenchmarkSettings : IComponentData
-    {
-        public Entity Prefab;
-    }
-
-    public struct BenchmarkTag : IComponentData {}
-
-    public class EntityweenBenchmark : MonoBehaviour
+    public class GameObjectBenchmark : MonoBehaviour
     {
         private enum BenchmarkTweenType
         {
@@ -25,8 +17,8 @@ namespace Entityween.Samples
             Mixed
         }
 
-        private static readonly int[] SpawnCounts = { 1000, 10000, 50000, 100000 };
-        private static readonly string[] SpawnLabels = { "1k", "10k", "50k", "100k" };
+        private static readonly int[] SpawnCounts = { 500, 1000, 5000, 10000 };
+        private static readonly string[] SpawnLabels = { "500", "1k", "5k", "10k" };
         private static readonly BenchmarkTweenType[] TweenTypes =
         {
             BenchmarkTweenType.Move,
@@ -35,13 +27,18 @@ namespace Entityween.Samples
             BenchmarkTweenType.Mixed
         };
 
-        private int selectedCount = 10000;
+        [Header("Prefab Reference")]
+        public GameObject prefab;
+
+        private int selectedCount = 1000;
         private BenchmarkTweenType selectedTweenType = BenchmarkTweenType.Move;
         private int spawnedCount = 0;
         private float fps = 0.0f;
         private float fpsTimer = 0f;
         private int fpsFrames = 0;
-        private bool pendingInitialRun = true;
+
+        private readonly List<GameObject> spawnedObjects = new();
+        private readonly List<Entity> tweenEntities = new();
 
         // Custom GUI styles
         private GUIStyle titleStyle;
@@ -52,19 +49,17 @@ namespace Entityween.Samples
 
         private void Start()
         {
-            pendingInitialRun = true;
+            RunBenchmark();
         }
 
         private void OnEnable()
         {
-            pendingInitialRun = true;
+            RunBenchmark();
         }
 
         private void OnDisable()
         {
-            if (!Application.isPlaying) return;
-            ClearSpawnedBenchmarkEntities();
-            spawnedCount = 0;
+            ClearBenchmark();
         }
 
         private void Update()
@@ -76,12 +71,6 @@ namespace Entityween.Samples
                 fps = fpsFrames / fpsTimer;
                 fpsTimer = 0f;
                 fpsFrames = 0;
-            }
-
-            if (pendingInitialRun && HasBenchmarkSettings())
-            {
-                pendingInitialRun = false;
-                RunBenchmark();
             }
         }
 
@@ -132,13 +121,12 @@ namespace Entityween.Samples
         {
             InitStyles();
 
-            // Benchmark UI container
-            GUI.Box(new Rect(15, 15, 240, 310), "Entityween Benchmark", titleStyle);
+            GUI.Box(new Rect(15, 15, 240, 310), "GO Tween Benchmark", titleStyle);
 
-            GUI.Label(new Rect(25, 45, 220, 20), $"Active Tweens: {spawnedCount}", labelStyle);
+            GUI.Label(new Rect(25, 45, 220, 20), $"Active GameObjects: {spawnedCount}", labelStyle);
             GUI.Label(new Rect(25, 65, 220, 20), $"FPS: {fps:F1}", labelStyle);
 
-            GUI.Label(new Rect(25, 95, 220, 20), "Spawn Count:", labelStyle);
+            GUI.Label(new Rect(25, 95, 220, 20), "Spawn Count (WARNING: GOs slow):", labelStyle);
             DrawSpawnCountButtons(new Rect(25, 115, 204, 24));
 
             GUI.Label(new Rect(25, 150, 220, 20), "Tween Type:", labelStyle);
@@ -181,57 +169,46 @@ namespace Entityween.Samples
 
         private void RunBenchmark()
         {
-            if (World.DefaultGameObjectInjectionWorld == null)
+            ClearBenchmark();
+
+            if (prefab == null)
+            {
+                Debug.LogWarning("Benchmark prefab not assigned!");
+                return;
+            }
+
+            var world = World.DefaultGameObjectInjectionWorld;
+            if (world == null || !world.IsCreated)
             {
                 Debug.LogWarning("DOTS Default World not initialized yet.");
                 return;
             }
-
-            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-
-            ClearSpawnedBenchmarkEntities();
-
-            var settingsQuery = em.CreateEntityQuery(typeof(BenchmarkSettings));
-            if (!settingsQuery.HasSingleton<BenchmarkSettings>())
-            {
-                Debug.LogWarning("BenchmarkSettings singleton not found. Make sure the authoring is baked.");
-                settingsQuery.Dispose();
-                return;
-            }
-
-            var settings = settingsQuery.GetSingleton<BenchmarkSettings>();
-            settingsQuery.Dispose();
-
-            if (settings.Prefab == Entity.Null)
-            {
-                Debug.LogWarning("Baked prefab Entity is Null!");
-                return;
-            }
+            var em = world.EntityManager;
 
             int count = selectedCount;
-            NativeArray<Entity> entities = new NativeArray<Entity>(count, Allocator.TempJob);
-            em.Instantiate(settings.Prefab, entities);
-
             float3 range = new float3(120f, 60f, 120f);
-            for (int i = 0; i < entities.Length; i++)
-            {
-                var ent = entities[i];
-                em.AddComponent<BenchmarkTag>(ent);
 
+            for (int i = 0; i < count; i++)
+            {
                 float3 startPos = new float3(
                     UnityEngine.Random.Range(-range.x, range.x),
                     UnityEngine.Random.Range(2f, range.y),
                     UnityEngine.Random.Range(-range.z, range.z)
                 );
 
-                em.SetComponentData(ent, LocalTransform.FromPosition(startPos));
+                // Instantiate GameObject
+                var go = Instantiate(prefab, startPos, Quaternion.identity, transform);
+                spawnedObjects.Add(go);
 
                 float duration = UnityEngine.Random.Range(1.5f, 4.0f);
-                PlayBenchmarkTween(em, ent, startPos, duration, PickTweenType());
+                Entity tweenEntity = PlayBenchmarkTween(em, go.transform, startPos, duration, PickTweenType());
+                if (tweenEntity != Entity.Null)
+                {
+                    tweenEntities.Add(tweenEntity);
+                }
             }
 
             spawnedCount = count;
-            entities.Dispose();
         }
 
         private BenchmarkTweenType PickTweenType()
@@ -241,63 +218,62 @@ namespace Entityween.Samples
                 : selectedTweenType;
         }
 
-        private static void PlayBenchmarkTween(EntityManager em, Entity entity, float3 startPosition, float duration, BenchmarkTweenType tweenType)
+        private static Entity PlayBenchmarkTween(EntityManager em, Transform target, float3 startPosition, float duration, BenchmarkTweenType tweenType)
         {
             switch (tweenType)
             {
                 case BenchmarkTweenType.Move:
                     float3 offset = new float3(0f, UnityEngine.Random.Range(4f, 15f), 0f);
-                    entity.MoveToLocal(startPosition + offset, duration)
+                    return target.MoveTo(startPosition + offset, duration)
                         .From(startPosition)
                         .Ease(EaseType.InOutSine)
                         .Loop(LoopType.PingPong)
                         .Play(em);
-                    break;
 
                 case BenchmarkTweenType.Rotate:
-                    entity.RotateToLocal(quaternion.RotateY(math.PI * 0.99f), duration)
+                    return target.RotateTo(quaternion.RotateY(math.PI * 0.99f), duration)
                         .From(quaternion.identity)
                         .Ease(EaseType.Linear)
                         .Loop(LoopType.Repeat)
                         .Play(em);
-                    break;
 
                 case BenchmarkTweenType.Scale:
-                    entity.ScaleTo(new float3(UnityEngine.Random.Range(1.5f, 3.0f)), duration)
+                    return target.ScaleTo(new float3(UnityEngine.Random.Range(1.5f, 3.0f)), duration)
                         .From(new float3(1f))
                         .Ease(EaseType.InOutBack)
                         .Loop(LoopType.PingPong)
                         .Play(em);
-                    break;
+
+                default:
+                    return Entity.Null;
             }
         }
 
-        private static void ClearSpawnedBenchmarkEntities()
+        private void ClearBenchmark()
         {
-            if (World.DefaultGameObjectInjectionWorld == null)
+            var world = World.DefaultGameObjectInjectionWorld;
+            if (world != null && world.IsCreated)
             {
-                return;
+                var em = world.EntityManager;
+                foreach (var tweenEntity in tweenEntities)
+                {
+                    if (tweenEntity != Entity.Null && em.Exists(tweenEntity))
+                    {
+                        em.DestroyEntity(tweenEntity);
+                    }
+                }
             }
+            tweenEntities.Clear();
 
-            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-            var query = em.CreateEntityQuery(typeof(BenchmarkTag));
-            em.DestroyEntity(query);
-            query.Dispose();
-        }
-
-        private bool HasBenchmarkSettings()
-        {
-            if (World.DefaultGameObjectInjectionWorld == null)
+            foreach (var go in spawnedObjects)
             {
-                return false;
+                if (go != null)
+                {
+                    Destroy(go);
+                }
             }
-
-            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-            var settingsQuery = em.CreateEntityQuery(typeof(BenchmarkSettings));
-            bool hasSettings = settingsQuery.HasSingleton<BenchmarkSettings>();
-            settingsQuery.Dispose();
-            return hasSettings;
+            spawnedObjects.Clear();
+            spawnedCount = 0;
         }
     }
-
 }

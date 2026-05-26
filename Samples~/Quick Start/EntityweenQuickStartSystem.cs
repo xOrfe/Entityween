@@ -9,7 +9,8 @@ using XO.Entityween;
 namespace Entityween.Samples
 {
     /// <summary>
-    /// Add this tag to an entity with LocalTransform to start the sample tween once.
+    /// Add this tag to any entity with LocalTransform to play a single tween.
+    /// The system removes the tag after scheduling, so the tween starts only once.
     /// </summary>
     public struct EntityweenQuickStartTag : IComponentData
     {
@@ -28,13 +29,17 @@ namespace Entityween.Samples
         {
             var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-            foreach (var (transform, entity) in SystemAPI
+            foreach (var (localTransform, entity) in SystemAPI
                          .Query<RefRO<LocalTransform>>()
                          .WithAll<EntityweenQuickStartTag>()
                          .WithEntityAccess())
             {
+                float3 startPosition = localTransform.ValueRO.Position;
+                float3 endPosition = startPosition + new float3(0f, 2f, 0f);
+
                 entity
-                    .MoveToWorld(transform.ValueRO.Position + new float3(0f, 2f, 0f), 1f)
+                    .MoveToWorld(endPosition, duration: 1f)
+                    .From(startPosition)
                     .Ease(EaseType.InOutSine)
                     .Play(ecb);
 

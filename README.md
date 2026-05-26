@@ -1,5 +1,7 @@
 # Entityween
 
+<!-- Version: 1.1.0 -->
+
 [![Unity](https://img.shields.io/badge/Unity-6.0%2B-blue.svg?style=flat-square)](https://unity.com/)
 [![DOTS](https://img.shields.io/badge/DOTS-Entities_1.2%2B-orange.svg?style=flat-square)](https://unity.com/dots)
 [![Burst](https://img.shields.io/badge/Burst-Supported-green.svg?style=flat-square)](https://docs.unity3d.com/Packages/com.unity.burst@latest)
@@ -9,295 +11,233 @@
   <img src="Documentation~/images/signature.svg" alt="xorfe signature" width="520" />
 </p>
 
-A Burst-compatible tweening package for Unity DOTS. It provides a fluent builder
-API that compiles down to Burst-optimized runtime systems.
+Entityween is a small tween, chase, and sequence package for Unity DOTS. It uses
+fluent builders, stores playback in ECS components, and runs the hot path in
+Burst-friendly systems.
 
 <p align="center">
-  <img src="Documentation~/images/benchmark_10000.png" alt="Spline HUD" width="60%" />
-  <img src="Documentation~/images/showcase.gif" alt="Spline HUD" width=40%" />
+  <img src="Documentation~/images/benchmark_10000.png" alt="Entityween benchmark" width="60%" />
+  <img src="Documentation~/images/showcase.gif" alt="Entityween showcase" width="40%" />
 </p>
 
+## Highlights
 
-
-## Features
-
-- **Burst-Compiled**: Tween calculations and damp/chase systems are fully jobified and Burst-compiled.
-- **Zero Allocations**: No runtime heap allocations during tween updates.
-- **Play Anywhere**: Run safely inside parallel jobs, standard systems, or bakers.
-
----
+- Tween ECS entities, GameObjects, fields/properties, or update callbacks.
+- Run one-shot tweens, continuous chases, or timeline-style sequences.
+- Use EntityManager, EntityCommandBuffer, parallel writers, or Bakers.
+- Add loops, easing, path splines, bend splines, and playback controls.
 
 ## Installation
 
-### Via Package Manager (Git URL)
-
-Add package from git URL:
+Add the package from this Git URL:
 
 ```text
 https://github.com/xOrfe/Entityween.git
 ```
 
-### Via `manifest.json`
-
-Add this to your project's `Packages/manifest.json`:
+Or add it to `Packages/manifest.json`:
 
 ```json
 "com.xorfe.entityween": "https://github.com/xOrfe/Entityween.git"
 ```
 
----
-
-## Start Modes
-
-### Implicit (Destination-Only)
-
-Reads the current transform component automatically when the tween starts:
+## Quick Start
 
 ```csharp
+using Unity.Entities;
+using Unity.Mathematics;
+using XO.Entityween;
+
 entity
-    .ScaleTo(new float3(2f, 2f, 2f), 1.0f)
-    .Ease(EaseType.OutBounce)
-    .Play(ecb);
-```
-
-### Explicit Start
-
-Forces the starting value, bypassing the current state:
-
-```csharp
-entity
-    .ScaleTo(1.0f, float3.zero) // Duration, Start
-    .To(new float3(1f, 1f, 1f)) // Destination
+    .MoveToWorld(new float3(0f, 3f, 0f), 1.0f)
     .Ease(EaseType.OutCubic)
     .Play(ecb);
 ```
 
----
-
-## Common Tweens & Chases
-
-### Transform Tweens
-
-| Method | Space | Affected Component |
-|:---|:---|:---|
-| `MoveToLocal(time, start)` / `(dest, time)` | Local | `LocalTransform.Position` (`float3`) |
-| `MoveToWorld(time, start)` / `(dest, time)` | World | `LocalTransform.Position` (`float3`) |
-| `RotateToLocal(time, start)` / `(dest, time)` | Local | `LocalTransform.Rotation` (`quaternion`) |
-| `RotateToWorld(time, start)` / `(dest, time)` | World | `LocalTransform.Rotation` (`quaternion`) |
-| `ScaleTo(time, start)` / `(dest, time)` | Local | `LocalTransform.Scale` (`float3` input, uniform DOTS scale at runtime) |
-| `ScaleToUniform(time, start)` | Local | `LocalTransform.Scale` (`float`) |
-
-### Non-Transform Value Tweens
-
-To animate raw float, vector, or quaternion variables (ideal for shaders, custom math, or UI):
-
-| Method | Value Type | Affected Component |
-|:---|:---|:---|
-| `FloatTo(time, start)` | `float` | `TweenValue<float>` |
-| `Float2To(time, start)` | `float2` | `TweenValue<float2>` |
-| `Float3To(time, start)` | `float3` | `TweenValue<float3>` |
-| `QuaternionTo(time, start)` | `quaternion` | `TweenValue<quaternion>` |
-
-### Target Chasing & Look-At
-
-To continuously track or look at a target (another `Entity` or dynamic values):
-
-| Method | Target Type | Easing/Damp Mode | Affected Component |
-|:---|:---|:---|:---|
-| `ChasePosition(target)` | `Entity` or `float3` | SmoothDamp / SmoothStep / Snap | `LocalTransform.Position` (`float3`) |
-| `ChaseRotation(target)` | `Entity` or `quaternion` | SmoothDamp / SmoothStep / Snap | `LocalTransform.Rotation` (`quaternion`) |
-| `Look(target)` | `Entity` or `float3` | SmoothDamp / SmoothStep / Snap | `LocalTransform.Rotation` (`quaternion`) |
-| `ChasePositionAndRotation(target)` | `Entity` or `float4x4` | SmoothDamp / SmoothStep / Snap | `LocalTransform.Position` (`float3`) & `Rotation` (`quaternion`) |
-| `ChasePositionAndLook(target)` | `Entity` or `float4x4` | SmoothDamp / SmoothStep / Snap | `LocalTransform.Position` (`float3`) & `Rotation` (`quaternion`) |
-
-### Configuration Modifiers
-
-Apply these builder methods before playing a tween or chase to customize behavior:
-
-* **Eases & Loops**:
-  * `.Ease(EaseType)`: Easing function (e.g. `EaseType.InOutQuad`).
-  * `.Loop(LoopType, count)`: Loop playback (`Repeat`, `PingPong`). Count `0` is infinite. `Random` currently falls back to `Repeat`.
-  * `.TimeType(PlaybackTimeType)`: Time source (`Scaled`, `Unscaled`, `Fixed`).
-* **Start/End Control**:
-  * `.To(destination)` / `.Destination(destination)`: Explicitly sets the target end value.
-  * `.From(start)`: Explicitly sets the start value (skips reading current state).
-  * `.FromCurrent()`: Explicitly start tweening from the entity's current runtime value.
-* **Path & Gizmos**:
-  * `.Along(points, splineType, isClosed)`: Moves along a spline path.
-  * `.Visualize()`: Renders the spline path gizmo in the editor Scene View.
-* **Chasing Options**:
-  * `.SmoothDamp(smoothTime, maxSpeed)`: Uses a velocity-damped spring (default for chase).
-  * `.Ease(EaseType)`: Uses SmoothStep easing for target tracking.
-  * `.Override()` / `.Override(true)`: Instantly snaps to the target.
-  * `.Chase(smoothTime, mode, maxSpeed, killOnChase)`: Appends settling chase behavior directly to a standard destination tween.
-
----
-
-## Loops & Time Types
+By default, transform tweens start from the entity's current transform. Use
+`.From(value)` when you want an explicit start value.
 
 ```csharp
 entity
-    .MoveToWorld(new float3(0f, 10f, 0f), 2.0f)
-    .Loop(LoopType.PingPong, count: 4) // Count 0 for infinite
-    .TimeType(PlaybackTimeType.Unscaled)
+    .ScaleTo(new float3(2f), 0.6f)
+    .From(new float3(1f))
+    .Loop(LoopType.PingPong)
     .Play(ecb);
 ```
 
-* **LoopType**: `Repeat`, `PingPong` (`Random` currently falls back to `Repeat`)
-* **PlaybackTimeType**: `Scaled` (standard delta time), `Unscaled` (realtime), `Fixed` (fixed update)
+## Tween API
 
----
+### Entity Tweens
 
-## Spline Paths
+| Method | Value | Writes to |
+|:---|:---|:---|
+| `MoveTo(dest, duration)` | `float3` | local position |
+| `MoveToLocal(dest, duration)` | `float3` | local position |
+| `MoveToWorld(dest, duration)` | `float3` | world position target |
+| `RotateTo(dest, duration)` | `quaternion` | local rotation |
+| `RotateToLocal(dest, duration)` | `quaternion` | local rotation |
+| `RotateToWorld(dest, duration)` | `quaternion` | world rotation target |
+| `ScaleTo(dest, duration)` | `float3` | scale |
+| `ScaleToUniform(dest, duration)` | `float` | uniform scale |
+| `FloatTo(dest, duration)` | `float` | value tween |
+| `Float2To(dest, duration)` | `float2` | value tween |
+| `Float3To(dest, duration)` | `float3` | value tween |
+| `QuaternionTo(dest, duration)` | `quaternion` | value tween |
 
+### Tween Modifiers
+
+| Method | Use |
+|:---|:---|
+| `.From(start)` | Set an explicit start value. |
+| `.FromCurrent()` | Read the current value when playback starts. |
+| `.To(target)` | Replace the destination value. |
+| `.Ease(easeType)` | Apply an `EaseType`. |
+| `.Loop(type, count, easeMode)` | Repeat or ping-pong. `count: 0` means infinite. |
+| `.TimeType(timeType)` | Use `Scaled`, `Unscaled`, or `Fixed` time. |
+| `.Along(points, splineType, isClosed)` | Follow a `NativeArray<T>` spline. |
+| `.Along(blob)` | Follow a `SplineBlob<T>`. |
+| `.Bend(blob)` | Bend the start-to-end tween line by a spline blob. |
+| `.Chase(...)` | Settle the final value with chase behavior. |
+| `.Bind(target, memberName)` | Write values to a public field or property. |
+| `.OnUpdate(callback)` | Receive calculated values each update. |
+| `.BindTransform(transform)` | Write values to a GameObject transform. |
+
+## GameObject and Managed Tweens
+
+GameObjects use the same builder style, but playback must run on a world because
+managed bindings sync on the main thread.
 
 ```csharp
-// Path points collection
-var points = new float3[]
-{
-    new float3(0f, 0f, 0f),
-    new float3(2f, 5f, 0f),
-    new float3(5f, 5f, 0f),
-    new float3(7f, 0f, 0f)
-};
-float3[] tangents = null;
-SplineUtility.InitializeOrResizeTangents(SplineType.CatmullRom, false, points, ref tangents);
-var flatPoints = SplineUtility.GetFlatPointsArray<float3, Float3Math>(SplineType.CatmullRom, false, points, tangents);
+transform
+    .MoveTo(new float3(0f, 2f, 0f), 0.5f)
+    .Ease(EaseType.OutQuad)
+    .Play(world.EntityManager);
+```
 
-entity
-    .MoveToWorld(3.0f, startPosition)
-    .Along(flatPoints, SplineType.CatmullRom, isClosed: false)
-    .Ease(EaseType.InOutQuad)
-    .Visualize() // Draws path gizmos in Scene View (Editor only)
+```csharp
+Entity.Null
+    .FloatTo(1f, 0.25f)
+    .Bind(healthBar, nameof(HealthBar.FillAmount))
+    .Play(world.EntityManager);
+```
+
+Managed bindings are for GameObjects, C# objects, and callbacks. Avoid them in
+Burst jobs, Bakers, and parallel writers.
+
+## Chase API
+
+Use chase when a value should continuously follow an entity or target value.
+
+```csharp
+follower
+    .ChasePosition(target)
+    .SmoothDamp(0.2f)
     .Play(ecb);
 ```
 
-Supported SplineTypes: `Linear`, `Step`, `CubicBezier`, `CatmullRom`, `BSpline`.
+| Method | Target | Result |
+|:---|:---|:---|
+| `ChasePosition(entityOrFloat3)` | `Entity` or `float3` | Follow position. |
+| `ChaseRotation(entityOrQuaternion)` | `Entity` or `quaternion` | Follow rotation. |
+| `Look(entityOrFloat3)` | `Entity` or `float3` | Rotate to look at target. |
+| `ChasePositionAndRotation(entityOrMatrix)` | `Entity` or `float4x4` | Follow pose. |
+| `ChasePositionAndLook(entityOrMatrix)` | `Entity` or `float4x4` | Follow position and look target. |
 
----
+| Modifier | Use |
+|:---|:---|
+| `.SmoothDamp(smoothTime, maxSpeed)` | Spring-like damped follow. |
+| `.Ease(easeType)` | SmoothStep-style follow. |
+| `.Override()` | Snap to the target. |
+| `.For(seconds)` | Duration when used inside a sequence. |
+| `.KillOnChase()` | Remove chase when the source tween completes. |
 
-## Sequences
+## Sequence API
 
-Choreograph multiple tweens, waits, and callback events:
+Sequences schedule tweens, chases, waits, and callbacks on one timeline.
 
 ```csharp
-Sequence.Create()
-    .Append(entity.MoveToWorld(new float3(0f, 5f, 0f), 0.5f).Ease(EaseType.OutQuad))
-    .Append(entity.Wait(0.2f))
-    .Join(entity.ScaleTo(new float3(1.5f), 0.3f)) // Play alongside
-    .Append(entity.MoveToWorld(new float3(5f, 5f, 0f), 0.5f))
+var sequence = Sequence.Create()
+    .Append(entity.MoveToWorld(new float3(0f, 3f, 0f), 0.5f))
+    .Join(entity.ScaleTo(new float3(1.5f), 0.5f))
+    .AppendWait(0.2f)
+    .Append(entity.ChasePosition(target).SmoothDamp(0.15f).For(1f))
     .AppendCallback("Done")
     .Play(ecb);
 ```
 
-### Catching Callback Events
+| Method | Use |
+|:---|:---|
+| `Sequence.Create()` | Build a sequence. |
+| `Sequence.Create(em/ecb/baker)` | Prepare a sequence in a playback context. |
+| `.Append(action)` | Add after the current cursor. |
+| `.Join(action)` | Run with the previous action. |
+| `.Insert(time, action)` | Add at an exact timeline time. |
+| `.AppendWait(seconds)` / `.InsertWait(time, seconds)` | Add time gaps. |
+| `.AppendCallback(id)` / `.InsertCallback(time, id)` | Emit `SequenceCallbackEvent`. |
+| `.Loop(type, count)` | Loop the whole sequence. |
+| `.TimeType(timeType)` | Select scaled, unscaled, or fixed time. |
+| `.TimeScale(scale)` | Speed up or slow down sequence time. |
+| `.DynamicTime()` | Let removed chase actions advance the timeline. |
+| `.Play(em/ecb/baker)` | Create and start the sequence entity. |
 
-When a sequence reaches a callback node, it emits a temporary entity with a `SequenceCallbackEvent` component. Catch it
-in a system and destroy the event:
+Handle callbacks by querying `SequenceCallbackEvent` and destroying the event
+entity after use.
+
+## Paths and Bend
+
+`Along` follows the spline itself. `Bend` keeps the tween's normal start and end
+points, then uses a spline blob as a shape offset between them.
+
 ```csharp
-[BurstCompile]
-public partial struct CallbackSystem : ISystem
-{
-    [BurstCompile]
-    public void OnUpdate(ref SystemState state)
-    {
-        var ecb = new EntityCommandBuffer(Allocator.Temp);
+using var points = new NativeArray<float3>(flatPoints, Allocator.Temp);
 
-        foreach (var (cb, eventEntity) in SystemAPI.Query<RefRO<SequenceCallbackEvent>>()
-                     .WithEntityAccess())
-        {
-            if (cb.ValueRO.CallbackId == "Done")
-            {
-                // Trigger your custom logic here
-            }
-            ecb.DestroyEntity(eventEntity); // Always clean up the event entity
-        }
-
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
-    }
-}
+entity
+    .MoveToWorld(new float3(5f, 0f, 0f), 1f)
+    .Along(points, SplineType.CatmullRom)
+    .Play(ecb);
 ```
 
----
+```csharp
+entity
+    .MoveToWorld(new float3(8f, 0f, 0f), 1f)
+    .Bend(pathBlob)
+    .Ease(EaseType.InOutSine)
+    .Play(ecb);
+```
+
+Supported spline types: `Linear`, `Step`, `CubicBezier`, `CatmullRom`, `BSpline`.
+
+## Playback Controls
+
+`Play` returns the tween or sequence entity. Use it to pause, resume, complete,
+rewind, or kill playback.
+
+```csharp
+var tween = entity.MoveToWorld(new float3(0f, 5f, 0f), 1f).Play(em);
+
+Entityween.Pause(tween, em);
+Entityween.Resume(tween, em);
+Entityween.Rewind(tween, em);
+Entityween.Kill(tween, em);
+```
+
+The same controls also accept an `EntityCommandBuffer`, parallel writer, or Baker.
 
 ## Playback Contexts
 
-You can execute a built tween/sequence in different environments:
-
-### @Systems/Jobs
-
 ```csharp
 tween.Play(ecb);
+tween.Play(sortKey, ref parallelWriter);
+tween.Play(entityManager);
+tween.Play(baker);
 ```
 
-### @Parallel Jobs
+## Notes
 
-```csharp
-tween.Play(chunkIndex, ref parallelWriter);
-```
-
-### @Immediate Execution
-
-```csharp
-tween.Play(state.EntityManager);
-```
-
-### @Baker
-
-```csharp
-public class ObstacleBaker : Baker<ObstacleAuthoring>
-{
-    public override void Bake(ObstacleAuthoring authoring)
-    {
-        var entity = GetEntity(TransformUsageFlags.Dynamic);
-        entity
-            .MoveToLocal(new float3(0f, 1f, 0f), 2.0f)
-            .Loop(LoopType.PingPong)
-            .Ease(EaseType.InOutSine)
-            .Play(this);
-    }
-}
-```
-
----
-
-## Curve & Spline Utilities
-
-Located in the `XO.Curve` namespace, these math and spline helper utilities are fully Burst-compatible and can be used on the main thread or inside jobs.
-
-### SplineUtility
-
-`SplineUtility` provides helpers to compute, resize, and prepare spline points/tangents before playing a tween:
-
-| Method | Description |
-|:---|:---|
-| `GetTargetTangentLength(splineType, isClosed, pointCount)` | Computes the required tangent array size for a given spline configuration. |
-| `InitializeOrResizeTangents<T>(splineType, isClosed, points, ref tangents, autoCalculate)` | Initializes/resizes a tangent array and optionally computes default tangents. |
-| `RecalculateAllTangents<T>(splineType, isClosed, points, tangents)` | Recomputes all control/boundary tangents for the spline points. |
-| `CalculateDefaultTangents<T>(splineType, isClosed, points, tangents, index)` | Computes a default tangent at a single index `i`. |
-| `GetFlatPointsArray<T, TMath>(splineType, isClosed, points, tangents, mathProvider)` | Merges spline points and tangents into a flat array compatible with the tween runtime. |
-
-### Curve Evaluation & Math Providers
-
-To evaluate curves, calculate distances, or run custom spring-damping calculations:
-
-* **Math Providers (`ICurveMath<T>`)**:
-  * Obtain via `CurveMathUtility.GetMathProvider<T>()`.
-  * Implementations: `FloatMath`, `Float2Math`, `Float3Math`, `QuaternionMath`.
-* **Common Math Operations**:
-  * `Lerp(a, b, t)`: Linearly interpolates two values (performs spherical linear interpolation `slerp` for quaternions).
-  * `EvaluateSpline(type, p0, p1, p2, p3, t)`: Evaluates a spline segment at local time `t` (supports `Linear`, `Step`, `CubicBezier`, `CatmullRom`, `BSpline`).
-  * `GetDistance(a, b)`: Calculates distance between two values (angular distance for quaternions).
-  * `SmoothDamp(current, target, ref velocity, smoothTime, maxSpeed, deltaTime)`: Smoothly damps towards a target value.
-
----
-
-<p align="center">
-  <img src="Documentation~/images/signature.svg" alt="xorfe signature" width="600" />
-</p>
-
----
+- `LoopType.Random` currently falls back to `Repeat`.
+- `TimeType.Fixed` is the default.
+- Managed field bindings may allocate because reflection boxes field values.
+- When using IL2CPP stripping, preserve members that are only referenced by name.
 
 ## License
 

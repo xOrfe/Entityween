@@ -66,7 +66,8 @@ namespace Entityween.Samples
             if (mainCamera == null || !cameraPathBlob.IsCreated) return;
 
             float cameraT = Mathf.Repeat(Time.time / math.max(0.1f, orbitDuration), 1f);
-            float3 sampledPosition = Spline.Sample(cameraPathBlob, cameraT);
+            float3 sampledPosition = default;
+            Spline.Sample(cameraPathBlob, cameraT, ref sampledPosition);
             sampledPosition.y += math.sin(Time.time * 0.85f) * 1.15f;
             Vector3 cameraPosition = sampledPosition;
             mainCamera.transform.position = cameraPosition;
