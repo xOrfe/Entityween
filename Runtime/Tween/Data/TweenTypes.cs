@@ -23,15 +23,6 @@ namespace XO.Entityween
         QuaternionTo
     }
 
-    internal enum TweenValueKind : byte
-    {
-        None,
-        Float,
-        Float2,
-        Float3,
-        Quaternion
-    }
-
     internal struct TweenTarget : IComponentData
     {
         public Entity Entity;

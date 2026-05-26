@@ -72,11 +72,11 @@ namespace XO.Entityween
                 }
             }
 
-            private void ApplyParams<T>(ChaseBlueprint<T> bp, ChaseAuthoring authoring) where T : unmanaged
+            private void ApplyParams<T>(ChaseBuilder<T> bp, ChaseAuthoring authoring) where T : unmanaged
             {
-                bp.Mode = authoring.mode;
-                bp.SmoothTime = authoring.smoothTime;
-                bp.MaxSpeed = authoring.maxSpeed;
+                bp.Chase.Mode = authoring.mode;
+                bp.Chase.SmoothTime = authoring.smoothTime;
+                bp.Chase.MaxSpeed = authoring.maxSpeed;
             }
         }
     }
