@@ -17,7 +17,6 @@ namespace XO.Entityween.Editor
 
         static EntityweenSampleImportChecker()
         {
-            // Delay the call until the first editor frame to ensure assets are fully loaded and compiled.
             EditorApplication.delayCall += CheckAndGenerateShowcases;
         }
 
@@ -25,7 +24,6 @@ namespace XO.Entityween.Editor
         {
             CleanupStaleVersions();
 
-            // If the sample scenes directory exists, and we haven't marked it as generated in EditorPrefs:
             if (Directory.Exists(SampleScenesDir))
             {
                 if (!EditorPrefs.GetBool(PrefKey, false))
@@ -57,8 +55,6 @@ namespace XO.Entityween.Editor
         {
             Debug.Log("[Entityween] Detecting imported samples. Automatically generating showcase scenes...");
 
-            // Use reflection to find the types in Assembly-CSharp-Editor since they are only compiled
-            // after the samples folder is imported/copied into Assets.
             var builderType = Type.GetType("Entityween.Editor.EntityweenShowcaseSceneBuilder, Assembly-CSharp-Editor");
 
             bool generatedAny = false;

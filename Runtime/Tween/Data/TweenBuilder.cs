@@ -116,9 +116,6 @@ namespace XO.Entityween
 
     public static class TweenBuilderExtensions
     {
-        // ==========================================
-        // ENTITY FACTORY METHODS (Consistent: destination, duration)
-        // ==========================================
 
         public static TweenBuilder<float3> MoveTo(this Entity e, float3 destination, float duration)
             => new() { Entity = e, TweenType = TweenType.MoveTo, Space = TweenSpace.Local, EaseType = EaseType.Linear, TimeType = PlaybackTimeType.Fixed, SecondsToPlay = duration, EndPoint = destination, StartFromCurrent = true };
@@ -156,9 +153,6 @@ namespace XO.Entityween
         public static TweenBuilder<quaternion> QuaternionTo(this Entity e, quaternion destination, float duration)
             => new() { Entity = e, TweenType = TweenType.QuaternionTo, Space = TweenSpace.Local, EaseType = EaseType.Linear, TimeType = PlaybackTimeType.Fixed, SecondsToPlay = duration, EndPoint = destination, StartFromCurrent = true };
 
-        // ==========================================
-        // TRANSFORM EXTENSIONS
-        // ==========================================
 
         public static TweenBuilder<float3> MoveTo(this Transform transform, float3 destination, float duration)
             => Entity.Null.MoveToWorld(destination, duration).BindTransform(transform);
@@ -178,9 +172,6 @@ namespace XO.Entityween
         public static TweenBuilder<float> ScaleToUniform(this Transform transform, float destination, float duration)
             => Entity.Null.ScaleToUniform(destination, duration).BindTransform(transform);
 
-        // ==========================================
-        // GAMEOBJECT EXTENSIONS
-        // ==========================================
 
 
         public static TweenBuilder<float3> MoveTo(this GameObject go, float3 destination, float duration)
@@ -201,9 +192,6 @@ namespace XO.Entityween
         public static TweenBuilder<float> ScaleToUniform(this GameObject go, float destination, float duration)
             => go.transform.ScaleToUniform(destination, duration);
 
-        // ==========================================
-        // FLUENT BUILDER METHODS
-        // ==========================================
 
         public static TweenBuilder<T> From<T>(this TweenBuilder<T> bp, T start) where T : unmanaged
         {
@@ -323,9 +311,6 @@ namespace XO.Entityween
             bp.Chase.KillOnChase = killOnChase;
             return bp;
         }
-        // ==========================================
-        // PLAY OVERLOADS
-        // ==========================================
 
         public static Entity Play<T>(this TweenBuilder<T> bp) where T : unmanaged
         {

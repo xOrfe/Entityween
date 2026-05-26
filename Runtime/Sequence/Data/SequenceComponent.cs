@@ -26,9 +26,6 @@ namespace XO.Entityween
         Callback
     }
     
-    //
-    //TODO : Can we do same thing with one TimeShift per sequence? Do we need TimeShift per element in any edge case?
-    //
     [InternalBufferCapacity(8)]
     internal struct SequenceElement : IBufferElementData
     {

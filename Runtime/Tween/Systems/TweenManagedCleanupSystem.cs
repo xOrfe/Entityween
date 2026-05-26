@@ -25,8 +25,6 @@ namespace XO.Entityween
 
             var em = EntityManager;
 
-            // 1. Detect and destroy orphaned tween entities to prevent leaks.
-            // An orphaned tween is one whose target (Entity or GameObject/Member/Callback) has been destroyed.
             using (var entities = _cleanupQuery.ToEntityArray(Allocator.Temp))
             using (var targets = _cleanupQuery.ToComponentDataArray<TweenTarget>(Allocator.Temp))
             {
@@ -36,7 +34,6 @@ namespace XO.Entityween
                     var targetData = targets[i];
                     bool isOrphaned = false;
 
-                    // Case A: The tween targets an ECS Entity which has been destroyed.
                     if (targetData.Entity != Entity.Null)
                     {
                         if (!em.Exists(targetData.Entity))
@@ -44,7 +41,6 @@ namespace XO.Entityween
                             isOrphaned = true;
                         }
                     }
-                    // Case B: The tween targets a GameObject/Transform which has been destroyed.
                     else if (em.HasComponent<TweenGameObjectTarget>(ghost))
                     {
                         if (TweenManagedRegistry.TryGetGameObject(World, ghost, out var go))
@@ -56,10 +52,9 @@ namespace XO.Entityween
                         }
                         else
                         {
-                            isOrphaned = true; // Registered as GameObject tween but missing from registry
+                            isOrphaned = true;
                         }
                     }
-                    // Case C: The tween targets a member variable or callback hook on an object which has been destroyed.
                     else if (em.HasComponent<TweenMemberHook<float>>(ghost))
                     {
                         if (TweenManagedRegistry.TryGetMember<float>(World, ghost, out var record) && IsDestroyed(record.Target))
@@ -108,7 +103,6 @@ namespace XO.Entityween
                 }
             }
 
-            // 2. Clean up all managed registry entries for any destroyed tween entities.
             TweenManagedRegistry.Cleanup(World, EntityManager);
         }
 

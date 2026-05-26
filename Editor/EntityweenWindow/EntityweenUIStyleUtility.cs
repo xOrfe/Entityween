@@ -5,7 +5,6 @@ namespace XO.Entityween.Editor
 {
     public static class EntityweenUIStyleUtility
     {
-        // Custom Color Palette for Dark Premium Theme
         public static readonly Color BgColor        = new Color(0.12f, 0.12f, 0.13f, 1f);
         public static readonly Color CardBgEven     = new Color(0.18f, 0.19f, 0.21f, 1f);
         public static readonly Color CardBgOdd      = new Color(0.15f, 0.16f, 0.18f, 1f);
@@ -211,7 +210,7 @@ namespace XO.Entityween.Editor
             {
                 var icon = new Label(iconText);
                 icon.style.fontSize = fontSize;
-                icon.style.width = fontSize * 1.3f; // Fixed width to prevent emoji overlapping due to zero-width font fallbacks
+                icon.style.width = fontSize * 1.3f;
                 icon.style.unityTextAlign = TextAnchor.MiddleCenter;
                 icon.style.marginRight = spacing;
                 icon.style.color = textColor;

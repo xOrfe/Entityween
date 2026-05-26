@@ -17,13 +17,12 @@ namespace XO.Entityween.Editor
         private string _searchFilter = "";
         private bool _autoRefresh = true;
         private double _lastRefreshTime;
-        private const double RefreshInterval = 0.05; // 20 FPS high-responsiveness live updates
+        private const double RefreshInterval = 0.05;
 
         private EntityweenWindow _window;
         private VisualElement _root;
         private EntityManager _em;
 
-        // UI Elements
         private VisualElement _debuggerViewRoot;
         private VisualElement _headerStatsRow;
         private Label _statTotalTweens;
@@ -40,7 +39,6 @@ namespace XO.Entityween.Editor
         private VisualElement _playModeBanner;
         private Label _playModeBannerText;
 
-        // Caching lists & dicts
         private List<TweenInfo>     _lastTweens    = new();
         private List<ChaseInfo>     _lastChases    = new();
         private List<SequenceInfo>  _lastSequences = new();
@@ -55,7 +53,6 @@ namespace XO.Entityween.Editor
         private readonly Dictionary<string, Label>         _categoryArrows     = new();
         private readonly Dictionary<string, bool>          _folds              = new();
 
-        // Data Structs
         private struct TweenInfo
         {
             public Entity Target;

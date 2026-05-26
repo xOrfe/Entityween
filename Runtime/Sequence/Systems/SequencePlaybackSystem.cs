@@ -164,7 +164,6 @@ namespace XO.Entityween
             }
             else
             {
-                // Backward play / Rewind
                 var elemStart = element.StartTime - (element.Started ? element.TimeShift : dynamicShift);
                 var elemEnd = elemStart + element.Duration;
 

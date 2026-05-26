@@ -14,7 +14,6 @@ namespace XO.Curve
         T SmoothStep(T current, T target, float smoothTime, float deltaTime);
         T MoveTowards(T current, T target, float maxDelta);
 
-        // Vector operations
         T Zero { get; }
         T Subtract(T a, T b);
         T Multiply(T a, float scalar);
@@ -249,7 +248,6 @@ namespace XO.Curve
             return math.slerp(current, target, t);
         }
 
-        // Vector operations for QuaternionMath
         public quaternion Zero => new quaternion(0f, 0f, 0f, 0f);
         public quaternion Subtract(quaternion a, quaternion b) => new quaternion(a.value - b.value);
         public quaternion Multiply(quaternion a, float scalar) => new quaternion(a.value * scalar);

@@ -77,9 +77,6 @@ namespace XO.Entityween
         /// <summary>
         /// Creates a chase builder for the entity to follow the target entity's position.
         /// </summary>
-        /// <param name="entity">The entity that will chase.</param>
-        /// <param name="target">The target entity to follow.</param>
-        /// <returns>A ChaseBuilder to further configure the behavior.</returns>
         public static ChaseBuilder<float3> ChasePosition(this Entity entity, Entity target) => new(entity, target, ChaseType.ChasePosition);
         public static ChaseBuilder<float3> ChasePosition(this Entity entity, float3 target) => new(entity, target, ChaseType.ChasePosition);
         public static ChaseBuilder<quaternion> ChaseRotation(this Entity entity, Entity target) => new(entity, target, ChaseType.ChaseRotation);
@@ -107,10 +104,6 @@ namespace XO.Entityween
         /// <summary>
         /// Configures the chase to use SmoothDamp interpolation.
         /// </summary>
-        /// <param name="builder">The chase builder.</param>
-        /// <param name="smoothTime">Approximately the time it will take to reach the target.</param>
-        /// <param name="maxSpeed">Optionally allows you to clamp the maximum speed.</param>
-        /// <returns>The updated ChaseBuilder.</returns>
         public static ChaseBuilder<T> SmoothDamp<T>(this ChaseBuilder<T> builder, float smoothTime = 0.15f, float maxSpeed = float.PositiveInfinity) where T : unmanaged
         {
             builder.Chase.Mode = ChaseMode.SmoothDamp;
@@ -123,9 +116,6 @@ namespace XO.Entityween
         /// <summary>
         /// Configures the chase to use SmoothStep easing instead of SmoothDamp.
         /// </summary>
-        /// <param name="builder">The chase builder.</param>
-        /// <param name="ease">The easing function to use.</param>
-        /// <returns>The updated ChaseBuilder.</returns>
         public static ChaseBuilder<T> Ease<T>(this ChaseBuilder<T> builder, EaseType ease) where T : unmanaged
         {
             builder.Chase.Mode = ChaseMode.SmoothStep;
@@ -142,8 +132,6 @@ namespace XO.Entityween
         /// <summary>
         /// Applies the chase configuration to the entity via an EntityCommandBuffer.
         /// </summary>
-        /// <param name="builder">The chase builder.</param>
-        /// <param name="ecb">The command buffer to record the changes.</param>
         public static void Play<T>(this ChaseBuilder<T> builder, EntityCommandBuffer ecb) where T : unmanaged
         {
             var adapter = new EntityCommandBufferAdapter { ECB = ecb };

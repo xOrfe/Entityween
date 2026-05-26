@@ -44,10 +44,8 @@ namespace Entityween.Editor
             string easeGallerySubScenePath = $"{outputDir}/SubScenes/EntityweenEaseGallery_Entities.unity";
             string benchmarkSubScenePath = $"{outputDir}/SubScenes/EntityweenBenchmark_Entities.unity";
 
-            // Create main scene first as Single to avoid untitled scene issue
             var mainScene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             
-            // Reposition main camera
             var mainCamera = GameObject.FindWithTag("MainCamera");
             if (mainCamera != null)
             {
@@ -56,31 +54,25 @@ namespace Entityween.Editor
             }
             EditorSceneManager.SaveScene(mainScene, mainScenePath);
 
-            // 1. Create Showcase entities SubScene
             var showcaseScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             BuildShowcaseEntities(showcaseScene, outputDir);
             EditorSceneManager.SaveScene(showcaseScene, showcaseSubScenePath);
             EditorSceneManager.CloseScene(showcaseScene, true);
 
-            // 2. Create Ease Gallery entities SubScene
             var easeGalleryScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             BuildEaseGalleryEntities(easeGalleryScene, outputDir);
             EditorSceneManager.SaveScene(easeGalleryScene, easeGallerySubScenePath);
             EditorSceneManager.CloseScene(easeGalleryScene, true);
 
-            // 3. Create Benchmark entities SubScene
             var benchmarkScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             BuildBenchmarkEntities(benchmarkScene, outputDir);
             EditorSceneManager.SaveScene(benchmarkScene, benchmarkSubScenePath);
             EditorSceneManager.CloseScene(benchmarkScene, true);
 
-            // Set main scene active
             EditorSceneManager.SetActiveScene(mainScene);
             
-            // Import asset database to recognize the new subscene assets
             AssetDatabase.Refresh();
 
-            // Create SubScene GameObjects in the main scene (Entities mode)
             var showcaseSubSceneObj = CreateSubSceneObject("ShowcaseSubScene", showcaseSubScenePath, true);
             var easeGallerySubSceneObj = CreateSubSceneObject("EaseGallerySubScene", easeGallerySubScenePath, true);
             var benchmarkSubSceneObj = CreateSubSceneObject("BenchmarkSubScene", benchmarkSubScenePath, true);
@@ -91,7 +83,6 @@ namespace Entityween.Editor
             string matFolder = $"{outputDir}/Materials";
             string prefabFolder = $"{outputDir}/Prefabs";
 
-            // 4. Create GameObject Mode hierarchies
             var showcaseRoot = new GameObject("ShowcaseRoot");
             var easeGalleryRoot = new GameObject("EaseGalleryRoot");
             var benchmarkRoot = new GameObject("BenchmarkRoot");
@@ -104,7 +95,6 @@ namespace Entityween.Editor
             BuildEaseGalleryGameObjects(mainScene, easeGalleryRoot.transform, matFolder);
             var goBenchmarkController = BuildBenchmarkGameObjects(mainScene, benchmarkRoot.transform, matFolder, prefabFolder);
 
-            // Shared camera controls
             var runtimeOrbitGo = new GameObject("RuntimeOrbitShowcase");
             EditorSceneManager.MoveGameObjectToScene(runtimeOrbitGo, mainScene);
             var runtimeOrbit = runtimeOrbitGo.AddComponent<ShowcaseRuntimeOrbit>();
@@ -112,13 +102,11 @@ namespace Entityween.Editor
 
 
 
-            // Entity benchmark controller
             GameObject benchmarkControllerGo = new GameObject("BenchmarkController");
             EditorSceneManager.MoveGameObjectToScene(benchmarkControllerGo, mainScene);
             var benchmarkController = benchmarkControllerGo.AddComponent<EntityweenBenchmark>();
             benchmarkController.enabled = false;
 
-            // Set up Switcher
             var switcherGo = new GameObject("EntityweenShowcaseSwitcher");
             EditorSceneManager.MoveGameObjectToScene(switcherGo, mainScene);
             var switcher = switcherGo.AddComponent<EntityweenShowcaseSwitcher>();
@@ -131,12 +119,10 @@ namespace Entityween.Editor
                 benchmarkController, goBenchmarkController
             );
 
-            // GameObject roots start deactivated (Switcher defaults to Entities Showcase)
             showcaseRoot.SetActive(false);
             easeGalleryRoot.SetActive(false);
             benchmarkRoot.SetActive(false);
 
-            // Save main scene again
             EditorSceneManager.SaveScene(mainScene, mainScenePath);
             AssetDatabase.Refresh();
         }
@@ -295,7 +281,6 @@ namespace Entityween.Editor
             sequence.duration = 3f;
             sequence.loop = LoopType.PingPong;
 
-            // Camera target entity helper
             var cameraTargetGo = new GameObject("ShowcaseCameraTarget");
             cameraTargetGo.transform.position = new Vector3(0f, 18f, -38f);
             var cameraAuthoring = cameraTargetGo.AddComponent<ShowcaseCameraAuthoring>();

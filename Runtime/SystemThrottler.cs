@@ -41,7 +41,7 @@ namespace XO.Entityween
                 _timeAccumulator -= timeInterval;
                 if (_timeAccumulator >= timeInterval)
                 {
-                    _timeAccumulator = 0f; // Prevent multiple triggers in a single frame if lag spike occurred
+                    _timeAccumulator = 0f;
                 }
                 return true;
             }

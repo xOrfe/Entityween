@@ -38,9 +38,6 @@ namespace Entityween.Samples
                 PositionLabel(labelGo, ltw.ValueRO.Position);
             }
 
-            // When a SubScene is unloaded, its entities disappear from the query above.
-            // visibleEntities will be empty (or missing those entities), so RemoveStaleLabels
-            // destroys the orphaned label GameObjects automatically.
             RemoveStaleLabels();
         }
 

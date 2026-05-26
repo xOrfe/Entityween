@@ -17,8 +17,6 @@ namespace XO.Entityween
         {
             var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
 
-            // 1. Members StartFromCurrent
-            // TweenValue<float>
             foreach (var (valueRef, startFromCurrent, entity) in SystemAPI.Query<RefRW<TweenValue<float>>, RefRO<TweenStartFromCurrent>>().WithAll<TweenMemberHook<float>>().WithEntityAccess())
             {
                 if (TweenManagedRegistry.TryGetMember<float>(World, entity, out var memberHook))
@@ -37,7 +35,6 @@ namespace XO.Entityween
                 ecb.RemoveComponent<TweenStartFromCurrent>(entity);
             }
 
-            // TweenValue<float2>
             foreach (var (valueRef, startFromCurrent, entity) in SystemAPI.Query<RefRW<TweenValue<float2>>, RefRO<TweenStartFromCurrent>>().WithAll<TweenMemberHook<float2>>().WithEntityAccess())
             {
                 if (TweenManagedRegistry.TryGetMember<float2>(World, entity, out var memberHook))
@@ -56,7 +53,6 @@ namespace XO.Entityween
                 ecb.RemoveComponent<TweenStartFromCurrent>(entity);
             }
 
-            // TweenValue<float3>
             foreach (var (valueRef, startFromCurrent, entity) in SystemAPI.Query<RefRW<TweenValue<float3>>, RefRO<TweenStartFromCurrent>>().WithAll<TweenMemberHook<float3>>().WithEntityAccess())
             {
                 if (TweenManagedRegistry.TryGetMember<float3>(World, entity, out var memberHook))
@@ -75,7 +71,6 @@ namespace XO.Entityween
                 ecb.RemoveComponent<TweenStartFromCurrent>(entity);
             }
 
-            // TweenValue<quaternion>
             foreach (var (valueRef, startFromCurrent, entity) in SystemAPI.Query<RefRW<TweenValue<quaternion>>, RefRO<TweenStartFromCurrent>>().WithAll<TweenMemberHook<quaternion>>().WithEntityAccess())
             {
                 if (TweenManagedRegistry.TryGetMember<quaternion>(World, entity, out var memberHook))
@@ -94,8 +89,6 @@ namespace XO.Entityween
                 ecb.RemoveComponent<TweenStartFromCurrent>(entity);
             }
 
-            // 2. Transform StartFromCurrent
-            // Transform position (float3)
             foreach (var (valueRef, startFromCurrent, transformTargetRef, entity) in SystemAPI.Query<RefRW<TweenValue<float3>>, RefRO<TweenStartFromCurrent>, RefRO<TweenGameObjectTarget>>().WithEntityAccess())
             {
                 if (TweenManagedRegistry.TryGetGameObject(World, entity, out var target))
@@ -122,7 +115,6 @@ namespace XO.Entityween
                 ecb.RemoveComponent<TweenStartFromCurrent>(entity);
             }
 
-            // Transform rotation (quaternion)
             foreach (var (valueRef, startFromCurrent, transformTargetRef, entity) in SystemAPI.Query<RefRW<TweenValue<quaternion>>, RefRO<TweenStartFromCurrent>, RefRO<TweenGameObjectTarget>>().WithEntityAccess())
             {
                 if (TweenManagedRegistry.TryGetGameObject(World, entity, out var target))
@@ -145,7 +137,6 @@ namespace XO.Entityween
                 ecb.RemoveComponent<TweenStartFromCurrent>(entity);
             }
 
-            // Transform scale (float)
             foreach (var (valueRef, startFromCurrent, transformTargetRef, entity) in SystemAPI.Query<RefRW<TweenValue<float>>, RefRO<TweenStartFromCurrent>, RefRO<TweenGameObjectTarget>>().WithEntityAccess())
             {
                 if (TweenManagedRegistry.TryGetGameObject(World, entity, out var target))

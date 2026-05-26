@@ -26,12 +26,10 @@ namespace XO.Entityween.Editor
 
         public void Tick()
         {
-            // Dashboard doesn't require real-time ticking
         }
 
         private void BuildDashboardView()
         {
-            // Title Header Card
             var headerCard = new VisualElement();
             headerCard.style.backgroundColor = new Color(0.15f, 0.20f, 0.28f, 1f);
             headerCard.style.paddingTop = 18;
@@ -64,7 +62,6 @@ namespace XO.Entityween.Editor
             leftCol.style.marginRight = 10;
             grid.Add(leftCol);
 
-            // Samples & Showcase Generator Card
             var samplesCard = new VisualElement();
             samplesCard.style.backgroundColor = EntityweenUIStyleUtility.CardBgEven;
             samplesCard.style.paddingTop = 15;
@@ -133,7 +130,6 @@ namespace XO.Entityween.Editor
             samplesCard.Add(btns);
             leftCol.Add(samplesCard);
 
-            // Info Card
             var infoCard = new VisualElement();
             infoCard.style.backgroundColor = EntityweenUIStyleUtility.CardBgEven;
             infoCard.style.paddingTop = 15;

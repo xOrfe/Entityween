@@ -20,7 +20,6 @@ namespace XO.Curve.Tests
             Assert.Greater(next, current);
             Assert.Less(next, target);
 
-            // Large deltaTime should reach the target (or very close)
             float closeToTarget = floatMath.SmoothStep(current, target, smoothTime, 10f);
             Assert.AreEqual(target, closeToTarget, 0.001f);
         }
@@ -85,7 +84,6 @@ namespace XO.Curve.Tests
             float currentDot = math.abs(math.dot(current.value, target.value));
             float resultDot = math.abs(math.dot(result.value, target.value));
 
-            // Result dot should be closer to target (i.e. larger dot value) than starting dot value
             Assert.Greater(resultDot, currentDot);
 
             quaternion closeToTarget = quaternionMath.SmoothStep(current, target, smoothTime, 10f);
@@ -97,9 +95,8 @@ namespace XO.Curve.Tests
         {
             var quaternionMath = default(QuaternionMath);
             quaternion current = quaternion.identity;
-            quaternion target = quaternion.EulerXYZ(0f, math.radians(90f), 0f); // 90 degrees around Y
+            quaternion target = quaternion.EulerXYZ(0f, math.radians(90f), 0f);
 
-            // 30 degrees limit = math.radians(30f)
             float maxDelta = math.radians(30f);
             quaternion result1 = quaternionMath.MoveTowards(current, target, maxDelta);
 

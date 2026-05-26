@@ -14,20 +14,17 @@ namespace XO.Entityween.Editor
         private SerializedObject _serializedSettings;
         public SerializedObject SerializedSettings => _serializedSettings;
 
-        // Views
         private IEntityweenView _dashboardView = new EntityweenDashboardView();
         private IEntityweenView _debuggerView = new EntityweenDebuggerView();
         private IEntityweenView _settingsView = new EntityweenSettingsView();
         private IEntityweenView _activeView;
 
-        // Sidebar UI Elements
         private VisualElement _sidebar;
         private VisualElement _contentContainer;
         private VisualElement _navBtnDashboard;
         private VisualElement _navBtnDebugger;
         private VisualElement _navBtnSettings;
 
-        // Window entry point
         [MenuItem("XO/Entityween/Open Dashboard", false, 0)]
         public static void OpenWindow()
         {
@@ -67,7 +64,6 @@ namespace XO.Entityween.Editor
             root.style.flexDirection = FlexDirection.Row;
             root.style.backgroundColor = EntityweenUIStyleUtility.BgColor;
 
-            // 1. Sidebar Container
             _sidebar = new VisualElement();
             _sidebar.style.width = 190;
             _sidebar.style.backgroundColor = new Color(0.09f, 0.10f, 0.11f, 1f);
@@ -79,7 +75,6 @@ namespace XO.Entityween.Editor
             _sidebar.style.paddingBottom = 15;
             root.Add(_sidebar);
 
-            // Sidebar Header / Logo
             var logoRow = new VisualElement();
             logoRow.style.alignItems = Align.Center;
             logoRow.style.marginBottom = 20;
@@ -97,7 +92,6 @@ namespace XO.Entityween.Editor
 
             _sidebar.Add(logoRow);
 
-            // Navigation Buttons
             _navBtnDashboard = CreateSidebarButton("🏠", "Dashboard", ViewType.Dashboard);
             _navBtnDebugger  = CreateSidebarButton("🎬", "Debugger", ViewType.Debugger);
             _navBtnSettings  = CreateSidebarButton("⚙", "Settings", ViewType.Settings);
@@ -106,7 +100,6 @@ namespace XO.Entityween.Editor
             _sidebar.Add(_navBtnDebugger);
             _sidebar.Add(_navBtnSettings);
 
-            // Sidebar Footer spacer
             var sidebarSpacer = new VisualElement();
             sidebarSpacer.style.flexGrow = 1;
             _sidebar.Add(sidebarSpacer);
@@ -117,7 +110,6 @@ namespace XO.Entityween.Editor
             footerLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
             _sidebar.Add(footerLabel);
 
-            // 2. Content Container
             _contentContainer = new VisualElement();
             _contentContainer.style.flexGrow = 1;
             _contentContainer.style.paddingTop = 15;
@@ -126,7 +118,6 @@ namespace XO.Entityween.Editor
             _contentContainer.style.paddingRight = 20;
             root.Add(_contentContainer);
 
-            // Set initial view
             SwitchView(ViewType.Dashboard);
         }
 

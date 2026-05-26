@@ -41,10 +41,10 @@ namespace XO.Entityween.Tests
 
             var sequence = Sequence.Create()
                 .Append(target.MoveToWorld(new float3(1f, 0f, 0f), 1f))
-                .AppendWait(1.0f) // Convenience helper
-                .Append(chaser.ChasePosition(target).For(2.0f)) // TimelineChase<float3>
-                .Append(customAction) // Custom blueprint
-                .AppendCallback("Completed") // Callback helper
+                .AppendWait(1.0f)
+                .Append(chaser.ChasePosition(target).For(2.0f))
+                .Append(customAction)
+                .AppendCallback("Completed")
                 .Play(em);
 
             Assert.IsTrue(em.HasComponent<Sequence>(sequence));

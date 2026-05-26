@@ -381,12 +381,10 @@ namespace XO.Entityween.Tests
         [Test]
         public void VerifyReadmeExamples()
         {
-            // Set up context variables
             Entity entity = Entity.Null;
             using var ecb = new EntityCommandBuffer(Allocator.Temp);
             var startPos = new float3(0f, 0f, 0f);
 
-            // Snippet 1: Quick Start
             var points = new float3[]
             {
                 startPos + new float3(-1f, 0f, 0f),
@@ -406,27 +404,23 @@ namespace XO.Entityween.Tests
                 .Append(entity.ScaleTo(new float3(1.5f), 0.5f).From(new float3(1f)).Loop(LoopType.PingPong))
                 .Play(ecb);
 
-            // Snippet 2: Implicit (Destination-Only)
             entity
                 .ScaleTo(new float3(2f, 2f, 2f), 1.0f)
                 .Ease(EaseType.OutBounce)
                 .Play(ecb);
 
-            // Snippet 3: Explicit Start
             entity
                 .ScaleTo(new float3(1f, 1f, 1f), 1.0f)
                 .From(float3.zero)
                 .Ease(EaseType.OutCubic)
                 .Play(ecb);
 
-            // Snippet 4: Loops & Time Types
             entity
                 .MoveToWorld(new float3(0f, 10f, 0f), 2.0f)
                 .Loop(LoopType.PingPong, count: 4)
                 .TimeType(PlaybackTimeType.Unscaled)
                 .Play(ecb);
 
-            // Snippet 5: Spline Paths
             var splinePoints = new float3[]
             {
                 new float3(0f, 0f, 0f),
@@ -446,7 +440,6 @@ namespace XO.Entityween.Tests
                 .Visualize()
                 .Play(ecb);
 
-            // Snippet 6: Sequences
             Sequence.Create()
                 .Append(entity.MoveToWorld(new float3(0f, 5f, 0f), 0.5f).Ease(EaseType.OutQuad))
                 .AppendWait(0.2f)
@@ -455,7 +448,6 @@ namespace XO.Entityween.Tests
                 .AppendCallback("Done")
                 .Play(ecb);
 
-            // Snippet 8: Curve & Spline Utilities - Tangent Generation Example
             float3[] pointsArray = new float3[]
             {
 
@@ -658,7 +650,6 @@ namespace XO.Entityween.Tests
                 .Play(em);
 
             Assert.AreNotEqual(Entity.Null, ghost);
-            // ChasePosition is added to the target entity and is public — verify Space is World
             var chasePos = em.GetComponentData<ChasePosition>(targetEntity);
             Assert.AreEqual(TweenSpace.World, chasePos.Space,
                 "Along() with MoveToWorld should store TweenSpace.World on the ChasePosition component.");
@@ -685,7 +676,6 @@ namespace XO.Entityween.Tests
                 .Play(em);
 
             Assert.AreNotEqual(Entity.Null, ghost);
-            // ChasePosition is added to the target entity and is public — verify Space is Local
             var chasePos = em.GetComponentData<ChasePosition>(targetEntity);
             Assert.AreEqual(TweenSpace.Local, chasePos.Space,
                 "Along() with MoveTo (local) should store TweenSpace.Local on the ChasePosition component.");
@@ -701,18 +691,14 @@ namespace XO.Entityween.Tests
             var target = em.CreateEntity();
             em.AddComponentData(target, new LocalTransform { Position = float3.zero, Scale = 1f, Rotation = quaternion.identity });
 
-            // Create a tween
             var ghost = target.MoveTo(new float3(10f, 0f, 0f), 1f).Play(em);
 
-            // Pause it
             Entityween.Pause(ghost, em);
             Assert.IsFalse(em.IsComponentEnabled<TweenControl>(ghost));
 
-            // Resume it
             Entityween.Resume(ghost, em);
             Assert.IsTrue(em.IsComponentEnabled<TweenControl>(ghost));
 
-            // Complete it
             Entityween.Complete(ghost, em);
             Assert.IsFalse(em.Exists(ghost));
             Assert.AreEqual(new float3(10f, 0f, 0f), em.GetComponentData<LocalTransform>(target).Position);
@@ -728,10 +714,8 @@ namespace XO.Entityween.Tests
 
             var ghost = target.MoveTo(new float3(10f, 0f, 0f), 1f).Play(em);
 
-            // Kill it
             Entityween.Kill(ghost, em);
             Assert.IsFalse(em.Exists(ghost));
-            // ChasePosition and ChasePositionTweenSource should be removed
             Assert.IsFalse(em.HasComponent<ChasePosition>(target));
             Assert.IsFalse(em.HasComponent<ChasePositionTweenSource>(target));
         }
@@ -746,12 +730,10 @@ namespace XO.Entityween.Tests
 
             var ghost = target.MoveTo(new float3(10f, 0f, 0f), 1f).Play(em);
 
-            // Let it play forward a bit by setting ElapsedTime manually
             var control = em.GetComponentData<TweenControl>(ghost);
             control.ElapsedTime = 0.5f;
             em.SetComponentData(ghost, control);
 
-            // Rewind it
             Entityween.Rewind(ghost, em);
             var progress = em.GetComponentData<PlaybackProgress>(ghost);
             Assert.AreEqual(-1, progress.Direction);
@@ -772,9 +754,8 @@ namespace XO.Entityween.Tests
             {
                 if (cb.ValueRO.CallbackId == "Done")
                 {
-                    // Trigger your custom logic here
                 }
-                ecb.DestroyEntity(eventEntity); // Always clean up the event entity
+                ecb.DestroyEntity(eventEntity);
             }
 
             ecb.Playback(state.EntityManager);

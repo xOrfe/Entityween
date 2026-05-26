@@ -39,18 +39,15 @@ namespace XO.Entityween.Editor
                     }
                     catch
                     {
-                        // Ignore and fallback
                     }
                 }
 
-                // Fallback to PackageManager package version
                 if (!string.IsNullOrEmpty(packageInfo.version))
                 {
                     return packageInfo.version;
                 }
             }
 
-            // Ultimate fallback
             return "1.1.0";
         }
     }

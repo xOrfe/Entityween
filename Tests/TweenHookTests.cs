@@ -321,7 +321,6 @@ namespace XO.Entityween.Tests
             }
             long after = GC.GetTotalMemory(false);
 
-            // Using 8KB tolerance to prevent false positives from runners
             long diff = Math.Abs(after - before);
             Assert.LessOrEqual(diff, 8192, $"GC allocations detected: {diff} bytes");
         }
@@ -382,7 +381,6 @@ namespace XO.Entityween.Tests
         {
             var systemHandle = _world.AddSystem<TestThrottledSystem>();
             
-            // Frame 1
             {
                 ref var stateRef = ref _world.Unmanaged.ResolveSystemStateRef(systemHandle);
                 ref var sysRef = ref _world.Unmanaged.GetUnsafeSystemRef<TestThrottledSystem>(systemHandle);
@@ -390,7 +388,6 @@ namespace XO.Entityween.Tests
                 Assert.AreEqual(0, sysRef.RunCount);
             }
 
-            // Frame 2
             {
                 ref var stateRef = ref _world.Unmanaged.ResolveSystemStateRef(systemHandle);
                 ref var sysRef = ref _world.Unmanaged.GetUnsafeSystemRef<TestThrottledSystem>(systemHandle);
@@ -398,7 +395,6 @@ namespace XO.Entityween.Tests
                 Assert.AreEqual(0, sysRef.RunCount);
             }
 
-            // Frame 3
             {
                 ref var stateRef = ref _world.Unmanaged.ResolveSystemStateRef(systemHandle);
                 ref var sysRef = ref _world.Unmanaged.GetUnsafeSystemRef<TestThrottledSystem>(systemHandle);
@@ -406,7 +402,6 @@ namespace XO.Entityween.Tests
                 Assert.AreEqual(1, sysRef.RunCount);
             }
 
-            // Frame 4
             {
                 ref var stateRef = ref _world.Unmanaged.ResolveSystemStateRef(systemHandle);
                 ref var sysRef = ref _world.Unmanaged.GetUnsafeSystemRef<TestThrottledSystem>(systemHandle);

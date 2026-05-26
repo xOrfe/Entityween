@@ -25,7 +25,6 @@ namespace XO.Entityween.Editor
 
         public void Tick()
         {
-            // Settings doesn't require real-time ticking
         }
 
         private void BuildSettingsView()

@@ -43,7 +43,6 @@ namespace Entityween.Samples
         private int fpsFrames = 0;
         private bool pendingInitialRun = true;
 
-        // Custom GUI styles
         private GUIStyle titleStyle;
         private GUIStyle labelStyle;
         private GUIStyle btnStyle;
@@ -132,7 +131,6 @@ namespace Entityween.Samples
         {
             InitStyles();
 
-            // Benchmark UI container
             GUI.Box(new Rect(15, 15, 240, 310), "Entityween Benchmark", titleStyle);
 
             GUI.Label(new Rect(25, 45, 220, 20), $"Active Tweens: {spawnedCount}", labelStyle);

@@ -40,7 +40,6 @@ namespace Entityween.Samples
         private readonly List<GameObject> spawnedObjects = new();
         private readonly List<Entity> tweenEntities = new();
 
-        // Custom GUI styles
         private GUIStyle titleStyle;
         private GUIStyle labelStyle;
         private GUIStyle btnStyle;
@@ -196,7 +195,6 @@ namespace Entityween.Samples
                     UnityEngine.Random.Range(-range.z, range.z)
                 );
 
-                // Instantiate GameObject
                 var go = Instantiate(prefab, startPos, Quaternion.identity, transform);
                 spawnedObjects.Add(go);
 

@@ -45,7 +45,6 @@ namespace XO.Entityween
                     return true;
                 }
 
-                // Look for property first
                 var prop = targetType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                 if (prop != null)
                 {
@@ -79,7 +78,6 @@ namespace XO.Entityween
                     }
                 }
 
-                // Fallback to field
                 var field = targetType.GetField(memberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                 if (field != null)
                 {
@@ -139,7 +137,6 @@ namespace XO.Entityween
                     return true;
                 }
 
-                // Look for property first
                 var prop = targetType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                 if (prop != null)
                 {
@@ -173,7 +170,6 @@ namespace XO.Entityween
                     }
                 }
 
-                // Fallback to field
                 var field = targetType.GetField(memberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                 if (field != null)
                 {
@@ -215,7 +211,6 @@ namespace XO.Entityween
 
         public static void AotTouch<T>() where T : unmanaged
         {
-            // Forces compiler to generate these paths for AOT targets
             bool alwaysFalse = false;
             if (alwaysFalse)
             {

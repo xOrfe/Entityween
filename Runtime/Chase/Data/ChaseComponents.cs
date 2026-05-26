@@ -14,7 +14,7 @@ namespace XO.Entityween
     [EditorBrowsable(EditorBrowsableState.Never)]
     public struct ChasePosition : IComponentData, IEnableableComponent
     {
-        public float3 TargetPosition; // Fallback if no target reference component is attached
+        public float3 TargetPosition;
         public float3 Velocity;
         public TweenSpace Space;
         public ChaseMode Mode;
@@ -26,7 +26,7 @@ namespace XO.Entityween
     [EditorBrowsable(EditorBrowsableState.Never)]
     public struct ChaseRotation : IComponentData, IEnableableComponent
     {
-        public quaternion TargetQuaternion; // Fallback if no target reference component is attached
+        public quaternion TargetQuaternion;
         public quaternion Velocity;
         public TweenSpace Space;
         public ChaseMode Mode;
@@ -37,7 +37,7 @@ namespace XO.Entityween
 
     internal struct Look : IComponentData, IEnableableComponent
     {
-        public float3 TargetPosition; // Fallback if no target reference component is attached
+        public float3 TargetPosition;
         public float3 Velocity;
         public ChaseMode Mode;
         public float SmoothTime;
@@ -47,7 +47,7 @@ namespace XO.Entityween
 
     internal struct ChaseScale : IComponentData, IEnableableComponent
     {
-        public float3 TargetScale; // Fallback if no target reference component is attached
+        public float3 TargetScale;
         public bool IsUniform;
         public float3 Velocity;
         public ChaseMode Mode;

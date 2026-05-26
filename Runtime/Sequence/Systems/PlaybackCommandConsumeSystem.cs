@@ -28,7 +28,6 @@ namespace XO.Entityween
             var em = state.EntityManager;
             var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-            // Process Pause Requests
             if (!m_PauseQuery.IsEmptyIgnoreFilter)
             {
                 using (var entities = m_PauseQuery.ToEntityArray(Allocator.Temp))
@@ -45,7 +44,6 @@ namespace XO.Entityween
                 }
             }
 
-            // Process Resume Requests
             if (!m_ResumeQuery.IsEmptyIgnoreFilter)
             {
                 using (var entities = m_ResumeQuery.ToEntityArray(Allocator.Temp))
@@ -62,7 +60,6 @@ namespace XO.Entityween
                 }
             }
 
-            // Process Kill Requests
             if (!m_KillQuery.IsEmptyIgnoreFilter)
             {
                 using (var entities = m_KillQuery.ToEntityArray(Allocator.Temp))
@@ -78,7 +75,6 @@ namespace XO.Entityween
                 }
             }
 
-            // Process Complete Requests
             if (!m_CompleteQuery.IsEmptyIgnoreFilter)
             {
                 using (var entities = m_CompleteQuery.ToEntityArray(Allocator.Temp))
@@ -94,7 +90,6 @@ namespace XO.Entityween
                 }
             }
 
-            // Process Rewind Requests
             if (!m_RewindQuery.IsEmptyIgnoreFilter)
             {
                 using (var entities = m_RewindQuery.ToEntityArray(Allocator.Temp))

@@ -78,7 +78,6 @@ namespace Entityween.Samples
                 }
             }
 
-            // The camera itself loops around the whole showcase.
             float3[] pathPoints = new float3[]
             {
                 new float3(0f, 14f, -28f),
@@ -98,7 +97,6 @@ namespace Entityween.Samples
                     .Play(this);
             }
 
-            // A separate look target lets the camera smoothly move focus item by item.
             cameraEntity.Look(lookTargetEntity)
                 .SmoothDamp(0.6f)
                 .Play(this);
@@ -115,15 +113,12 @@ namespace Entityween.Samples
 
                 if (i == 0)
                 {
-                    // Start directly at the first item
                     seq.Append(lookTargetEntity.MoveToWorld(itemPos, 0.1f));
                 }
                 else
                 {
-                    // Smoothly transition to the next item
                     seq.Append(lookTargetEntity.MoveToWorld(itemPos, authoring.lookTransitionDuration).Ease(EaseType.InOutSine));
                 }
-                // Hold focus on the item
                 seq.AppendWait(authoring.lookHoldDuration);
             }
 

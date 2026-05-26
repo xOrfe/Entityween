@@ -57,7 +57,6 @@ namespace XO.Entityween
         /// <summary>
         /// Generic registry storage used to tween property/field (member) values of managed objects.
         /// </summary>
-        /// <typeparam name="T">The unmanaged data type being tweened (e.g., float, float3, quaternion).</typeparam>
         public static class Member<T> where T : unmanaged
         {
             /// <summary>
@@ -104,7 +103,6 @@ namespace XO.Entityween
         /// <summary>
         /// Generic registry storage for C# methods (callbacks) triggered during tween steps or on completion.
         /// </summary>
-        /// <typeparam name="T">The unmanaged parameter type sent to the callback.</typeparam>
         public static class Callback<T> where T : unmanaged
         {
             /// <summary>
@@ -148,7 +146,6 @@ namespace XO.Entityween
 
         #region Cleanup (Memory Cleanup)
 
-        // Temporary key list used during cleanup to avoid allocating a new list each frame (prevents GC Alloc).
         private static readonly List<(World, Entity)> _tempKeys = new List<(World, Entity)>(1024);
 
         /// <summary>
@@ -157,16 +154,13 @@ namespace XO.Entityween
         /// </summary>
         public static void Cleanup(World world, EntityManager em)
         {
-            // Clean up GameObject targets
             CleanupDict(world, em, GameObjectTargets);
 
-            // Clean up Member hooks for supported types
             CleanupDict(world, em, Member<float>.Records);
             CleanupDict(world, em, Member<Unity.Mathematics.float2>.Records);
             CleanupDict(world, em, Member<Unity.Mathematics.float3>.Records);
             CleanupDict(world, em, Member<Unity.Mathematics.quaternion>.Records);
 
-            // Clean up Callback hooks for supported types
             CleanupDict(world, em, Callback<float>.Records);
             CleanupDict(world, em, Callback<Unity.Mathematics.float2>.Records);
             CleanupDict(world, em, Callback<Unity.Mathematics.float3>.Records);
@@ -180,7 +174,6 @@ namespace XO.Entityween
         {
             _tempKeys.Clear();
 
-            // Detect destroyed entities
             foreach (var key in dict.Keys)
             {
                 if (key.Item1 == world && !em.Exists(key.Item2))
@@ -189,7 +182,6 @@ namespace XO.Entityween
                 }
             }
 
-            // Remove from dictionary
             for (int i = 0; i < _tempKeys.Count; i++)
             {
                 dict.Remove(_tempKeys[i]);

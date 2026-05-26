@@ -74,7 +74,6 @@ namespace XO.Entityween
 
         private void SyncFloat()
         {
-            // Sync Member Hooks for float
             foreach (var (valueRef, entity) in SystemAPI.Query<RefRO<TweenValue<float>>>().WithAll<TweenMemberHook<float>>().WithEntityAccess())
             {
                 if (!TweenManagedRegistry.TryGetMember<float>(World, entity, out var hook)) continue;
@@ -89,7 +88,6 @@ namespace XO.Entityween
                 }
             }
 
-            // Sync Callback Hooks for float
             foreach (var (valueRef, entity) in SystemAPI.Query<RefRO<TweenValue<float>>>().WithAll<TweenCallbackHook<float>>().WithEntityAccess())
             {
                 if (!TweenManagedRegistry.TryGetCallback<float>(World, entity, out var hook)) continue;
@@ -110,7 +108,6 @@ namespace XO.Entityween
                 }
             }
 
-            // Sync GameObject Target for float (Scale)
             foreach (var (valueRef, targetRef, entity) in SystemAPI.Query<RefRO<TweenValue<float>>, RefRO<TweenGameObjectTarget>>().WithEntityAccess())
             {
                 if (!TweenManagedRegistry.TryGetGameObject(World, entity, out var target)) continue;
@@ -124,7 +121,6 @@ namespace XO.Entityween
 
         private void SyncFloat2()
         {
-            // Sync Member Hooks for float2
             foreach (var (valueRef, entity) in SystemAPI.Query<RefRO<TweenValue<float2>>>().WithAll<TweenMemberHook<float2>>().WithEntityAccess())
             {
                 if (!TweenManagedRegistry.TryGetMember<float2>(World, entity, out var hook)) continue;
@@ -139,7 +135,6 @@ namespace XO.Entityween
                 }
             }
 
-            // Sync Callback Hooks for float2
             foreach (var (valueRef, entity) in SystemAPI.Query<RefRO<TweenValue<float2>>>().WithAll<TweenCallbackHook<float2>>().WithEntityAccess())
             {
                 if (!TweenManagedRegistry.TryGetCallback<float2>(World, entity, out var hook)) continue;
@@ -163,7 +158,6 @@ namespace XO.Entityween
 
         private void SyncFloat3()
         {
-            // Sync Member Hooks for float3
             foreach (var (valueRef, entity) in SystemAPI.Query<RefRO<TweenValue<float3>>>().WithAll<TweenMemberHook<float3>>().WithEntityAccess())
             {
                 if (!TweenManagedRegistry.TryGetMember<float3>(World, entity, out var hook)) continue;
@@ -178,7 +172,6 @@ namespace XO.Entityween
                 }
             }
 
-            // Sync Callback Hooks for float3
             foreach (var (valueRef, entity) in SystemAPI.Query<RefRO<TweenValue<float3>>>().WithAll<TweenCallbackHook<float3>>().WithEntityAccess())
             {
                 if (TweenManagedRegistry.TryGetCallback<float3>(World, entity, out var hook))
@@ -201,7 +194,6 @@ namespace XO.Entityween
                 }
             }
 
-            // Sync GameObject Target for float3 (Position, Scale)
             foreach (var (valueRef, targetRef, entity) in SystemAPI.Query<RefRO<TweenValue<float3>>, RefRO<TweenGameObjectTarget>>().WithEntityAccess())
             {
                 if (!TweenManagedRegistry.TryGetGameObject(World, entity, out var target)) continue;
@@ -224,7 +216,6 @@ namespace XO.Entityween
 
         private void SyncQuaternion()
         {
-            // Sync Member Hooks for quaternion
             foreach (var (valueRef, entity) in SystemAPI.Query<RefRO<TweenValue<quaternion>>>().WithAll<TweenMemberHook<quaternion>>().WithEntityAccess())
             {
                 if (!TweenManagedRegistry.TryGetMember<quaternion>(World, entity, out var hook)) continue;
@@ -239,7 +230,6 @@ namespace XO.Entityween
                 }
             }
 
-            // Sync Callback Hooks for quaternion
             foreach (var (valueRef, entity) in SystemAPI.Query<RefRO<TweenValue<quaternion>>>().WithAll<TweenCallbackHook<quaternion>>().WithEntityAccess())
             {
                 if (!TweenManagedRegistry.TryGetCallback<quaternion>(World, entity, out var hook)) continue;
@@ -260,7 +250,6 @@ namespace XO.Entityween
                 }
             }
 
-            // Sync GameObject Target for quaternion (Rotation)
             foreach (var (valueRef, targetRef, entity) in SystemAPI.Query<RefRO<TweenValue<quaternion>>, RefRO<TweenGameObjectTarget>>().WithEntityAccess())
             {
                 if (!TweenManagedRegistry.TryGetGameObject(World, entity, out var target)) continue;
