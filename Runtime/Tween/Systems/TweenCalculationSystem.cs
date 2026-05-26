@@ -9,7 +9,7 @@ namespace XO.Entityween
 {
 
     [BurstCompile]
-    [UpdateInGroup(typeof(EntityweenCalculationGroup))]
+    [UpdateInGroup(typeof(EntityweenTweenGroup))]
     [RequireMatchingQueriesForUpdate]
     internal partial struct TweenCalculationSystem : ISystem
     {
@@ -48,9 +48,12 @@ namespace XO.Entityween
             var entityType = SystemAPI.GetEntityTypeHandle();
             var controlHandle = SystemAPI.GetComponentTypeHandle<TweenControl>();
             var progressHandle = SystemAPI.GetComponentTypeHandle<PlaybackProgress>();
-            var loopHandle = SystemAPI.GetComponentTypeHandle<PlaybackLoop>();
             var sequenceDrivenHandle = SystemAPI.GetComponentTypeHandle<TweenSequenceDriven>(true);
             var splineStateHandle = SystemAPI.GetComponentTypeHandle<SplineState>(true);
+            var splineBlobRefFloatHandle = SystemAPI.GetComponentTypeHandle<SplineBlobRef<float>>(true);
+            var splineBlobRefFloat2Handle = SystemAPI.GetComponentTypeHandle<SplineBlobRef<float2>>(true);
+            var splineBlobRefFloat3Handle = SystemAPI.GetComponentTypeHandle<SplineBlobRef<float3>>(true);
+            var splineBlobRefQuatHandle = SystemAPI.GetComponentTypeHandle<SplineBlobRef<quaternion>>(true);
 
             if (!_queryFloat.IsEmptyIgnoreFilter)
             {
@@ -63,9 +66,9 @@ namespace XO.Entityween
                     EntityType = entityType,
                     ControlHandle = controlHandle,
                     ProgressHandle = progressHandle,
-                    LoopHandle = loopHandle,
                     SequenceDrivenHandle = sequenceDrivenHandle,
                     SplineStateHandle = splineStateHandle,
+                    SplineBlobRefHandle = splineBlobRefFloatHandle,
                     ValueHandle = SystemAPI.GetComponentTypeHandle<TweenValue<float>>(),
                     SplineHandle = SystemAPI.GetBufferTypeHandle<SplineElement<float>>(true)
                 }.ScheduleParallel(_queryFloat, state.Dependency);
@@ -82,9 +85,9 @@ namespace XO.Entityween
                     EntityType = entityType,
                     ControlHandle = controlHandle,
                     ProgressHandle = progressHandle,
-                    LoopHandle = loopHandle,
                     SequenceDrivenHandle = sequenceDrivenHandle,
                     SplineStateHandle = splineStateHandle,
+                    SplineBlobRefHandle = splineBlobRefFloat2Handle,
                     ValueHandle = SystemAPI.GetComponentTypeHandle<TweenValue<float2>>(),
                     SplineHandle = SystemAPI.GetBufferTypeHandle<SplineElement<float2>>(true)
                 }.ScheduleParallel(_queryFloat2, state.Dependency);
@@ -101,9 +104,9 @@ namespace XO.Entityween
                     EntityType = entityType,
                     ControlHandle = controlHandle,
                     ProgressHandle = progressHandle,
-                    LoopHandle = loopHandle,
                     SequenceDrivenHandle = sequenceDrivenHandle,
                     SplineStateHandle = splineStateHandle,
+                    SplineBlobRefHandle = splineBlobRefFloat3Handle,
                     ValueHandle = SystemAPI.GetComponentTypeHandle<TweenValue<float3>>(),
                     SplineHandle = SystemAPI.GetBufferTypeHandle<SplineElement<float3>>(true)
                 }.ScheduleParallel(_queryFloat3, state.Dependency);
@@ -120,9 +123,9 @@ namespace XO.Entityween
                     EntityType = entityType,
                     ControlHandle = controlHandle,
                     ProgressHandle = progressHandle,
-                    LoopHandle = loopHandle,
                     SequenceDrivenHandle = sequenceDrivenHandle,
                     SplineStateHandle = splineStateHandle,
+                    SplineBlobRefHandle = splineBlobRefQuatHandle,
                     ValueHandle = SystemAPI.GetComponentTypeHandle<TweenValue<quaternion>>(),
                     SplineHandle = SystemAPI.GetBufferTypeHandle<SplineElement<quaternion>>(true)
                 }.ScheduleParallel(_queryQuat, state.Dependency);
@@ -200,9 +203,9 @@ namespace XO.Entityween
         public ComponentTypeHandle<TweenControl> ControlHandle;
         public ComponentTypeHandle<PlaybackProgress> ProgressHandle;
 
-        public ComponentTypeHandle<PlaybackLoop> LoopHandle;
         [ReadOnly] public ComponentTypeHandle<TweenSequenceDriven> SequenceDrivenHandle;
         [ReadOnly] public ComponentTypeHandle<SplineState> SplineStateHandle;
+        [ReadOnly] public ComponentTypeHandle<SplineBlobRef<T>> SplineBlobRefHandle;
 
         public ComponentTypeHandle<TweenValue<T>> ValueHandle;
         [ReadOnly] public BufferTypeHandle<SplineElement<T>> SplineHandle;
@@ -214,13 +217,13 @@ namespace XO.Entityween
             var progresses = chunk.GetNativeArray(ref ProgressHandle);
             var values = chunk.GetNativeArray(ref ValueHandle);
 
-            bool hasLoop = chunk.Has(ref LoopHandle);
-            bool isSequenceDriven = chunk.Has(ref SequenceDrivenHandle);
-            bool hasSplineState = chunk.Has(ref SplineStateHandle);
+            var isSequenceDriven = chunk.Has(ref SequenceDrivenHandle);
+            var hasSplineState = chunk.Has(ref SplineStateHandle);
+            var hasBlobSpline = chunk.Has(ref SplineBlobRefHandle);
 
-            var loops = hasLoop ? chunk.GetNativeArray(ref LoopHandle) : default;
             var splineStates = hasSplineState ? chunk.GetNativeArray(ref SplineStateHandle) : default;
             var splineAccessor = hasSplineState ? chunk.GetBufferAccessor(ref SplineHandle) : default;
+            var blobSplines = hasBlobSpline ? chunk.GetNativeArray(ref SplineBlobRefHandle) : default;
 
             var enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
             while (enumerator.NextEntityIndex(out int i))
@@ -229,30 +232,56 @@ namespace XO.Entityween
                 var progress = progresses[i];
                 var value = values[i];
 
-                if (control.ElapsedTime < 0) control.ElapsedTime = 0;
-                if (!isSequenceDriven) control.ElapsedTime += PlaybackUtilities.GetDeltaTime(progress.TimeType, DeltaTime, UnscaledDeltaTime);
+                var timeDir = progress.Direction == 0 ? 1 : progress.Direction;
+                if (!isSequenceDriven)
+                    control.ElapsedTime += PlaybackUtilities.GetDeltaTime(progress.TimeType, DeltaTime, UnscaledDeltaTime) * timeDir;
 
-                var loop = hasLoop ? loops[i] : default;
-                float t;
-                bool isFinished = PlaybackUtilities.CalculateProgress(
+                PlaybackUtilities.CalculateProgress(
                     ref control.ElapsedTime,
                     control.SecondsToPlay,
-                    ref loop,
-                    hasLoop,
-                    out t);
-
-                if (hasLoop)
-                {
-                    loops[i] = loop;
-                }
+                    ref progress,
+                    out var normalizedTime,
+                    out var isFinished);
 
                 control.Completed = isFinished;
+                progress.NormalizedTime = normalizedTime;
 
-                progress.NormalizedTime = t;
+                float easedT;
+                if (progress.LoopType == LoopType.PingPong && progress.LoopEaseMode == LoopEaseMode.Repeat && (progress.LoopIndex % 2 == 1))
+                {
+                    var progressValue = 1f - normalizedTime;
+                    var easedTForward = Ease.EasedT(progressValue, control.EaseType);
+                    easedT = 1f - easedTForward;
+                }
+                else
+                {
+                    easedT = Ease.EasedT(normalizedTime, control.EaseType);
+                }
 
-                float easedT = Ease.EasedT(t, control.EaseType);
-
-                if (hasSplineState && splineAccessor.Length > 0)
+                if (hasBlobSpline)
+                {
+                    var spline = blobSplines[i];
+                    var blobRef = spline.Blob;
+                    if (blobRef.IsCreated)
+                    {
+                        var provider = new Spline.BlobSplineAdapter<T>(blobRef);
+                        var sample = Spline.SampleGeneric<T, Spline.BlobSplineAdapter<T>, TMath>(ref provider, easedT, Math);
+                        value.CurrentValue = spline.IsBend && provider.KnotCount >= 2
+                            ? Math.Bend(
+                                value.StartPoint,
+                                value.EndPoint,
+                                provider.GetKnot(0),
+                                provider.GetKnot(provider.KnotCount - 1),
+                                sample,
+                                easedT)
+                            : sample;
+                    }
+                    else
+                    {
+                        value.CurrentValue = Math.Lerp(value.StartPoint, value.EndPoint, easedT);
+                    }
+                }
+                else if (hasSplineState && splineAccessor.Length > 0)
                 {
                     var provider = new Spline.BufferSplineAdapter<T>(splineStates[i], splineAccessor[i]);
                     value.CurrentValue = Spline.SampleGeneric<T, Spline.BufferSplineAdapter<T>, TMath>(ref provider, easedT, Math);
@@ -311,7 +340,7 @@ namespace XO.Entityween
 
                 if (sourceCompleted && !chasePositions[i].KillOnChase)
                 {
-                    Ecb.RemoveComponent(unfilteredChunkIndex, entities[i], typeof(ChasePositionTweenSource));
+                    Ecb.RemoveComponent<ChasePositionTweenSource>(unfilteredChunkIndex, entities[i]);
                 }
                 else
                 {
@@ -358,7 +387,7 @@ namespace XO.Entityween
 
                 if (sourceCompleted && !chaseRotations[i].KillOnChase)
                 {
-                    Ecb.RemoveComponent(unfilteredChunkIndex, entities[i], typeof(ChaseRotationTweenSource));
+                    Ecb.RemoveComponent<ChaseRotationTweenSource>(unfilteredChunkIndex, entities[i]);
                 }
                 else
                 {
@@ -404,7 +433,7 @@ namespace XO.Entityween
 
                 if (sourceCompleted && !looks[i].KillOnChase)
                 {
-                    Ecb.RemoveComponent(unfilteredChunkIndex, entities[i], typeof(LookTweenSource));
+                    Ecb.RemoveComponent<LookTweenSource>(unfilteredChunkIndex, entities[i]);
                 }
                 else
                 {
@@ -457,7 +486,7 @@ namespace XO.Entityween
 
                 if (sourceCompleted && !chaseScales[i].KillOnChase)
                 {
-                    Ecb.RemoveComponent(unfilteredChunkIndex, entities[i], typeof(ChaseScaleTweenSource));
+                    Ecb.RemoveComponent<ChaseScaleTweenSource>(unfilteredChunkIndex, entities[i]);
                 }
                 else
                 {

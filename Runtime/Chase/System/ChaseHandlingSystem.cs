@@ -176,9 +176,7 @@ namespace XO.Entityween
                 {
                     case ChaseMode.SmoothStep:
                     {
-                        var step = CurveMathUtility.GetSmoothStep(chase.SmoothTime, DeltaTime);
-                        var diff = targetPos - currentPos;
-                        newPos = math.lengthsq(diff) > Epsilon ? math.lerp(currentPos, targetPos, step) : targetPos;
+                        newPos = float3Math.SmoothStep(currentPos, targetPos, chase.SmoothTime, DeltaTime);
                         break;
                     }
                     case ChaseMode.SmoothDamp:
@@ -285,10 +283,7 @@ namespace XO.Entityween
                 {
                     case ChaseMode.SmoothStep:
                     {
-                        var angularDot = math.abs(math.dot(targetRot, currentRot));
-                        newRot = angularDot < RotationDotEpsilon
-                            ? math.slerp(currentRot, targetRot, CurveMathUtility.GetSmoothStep(chase.SmoothTime, DeltaTime))
-                            : targetRot;
+                        newRot = quaternionMath.SmoothStep(currentRot, targetRot, chase.SmoothTime, DeltaTime);
                         velocity = zeroQuat;
                         break;
                     }
@@ -361,6 +356,7 @@ namespace XO.Entityween
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in Unity.Burst.Intrinsics.v128 chunkEnabledMask)
         {
             var float3Math = default(Float3Math);
+            var quaternionMath = default(QuaternionMath);
             var transforms = chunk.GetNativeArray(ref TransformType);
             var ltws = chunk.GetNativeArray(ref ChunkLtwType);
             var chases = chunk.GetNativeArray(ref ChaseType);
@@ -402,10 +398,7 @@ namespace XO.Entityween
                     {
                         case ChaseMode.SmoothStep:
                         {
-                            var angularDot = math.abs(math.dot(desiredRot, currentRot));
-                            nextRot = angularDot < RotationDotEpsilon
-                                ? math.slerp(currentRot, desiredRot, CurveMathUtility.GetSmoothStep(chase.SmoothTime, DeltaTime))
-                                : desiredRot;
+                            nextRot = quaternionMath.SmoothStep(currentRot, desiredRot, chase.SmoothTime, DeltaTime);
                             chase.Velocity = float3.zero;
                             break;
                         }
@@ -510,9 +503,7 @@ namespace XO.Entityween
                 {
                     case ChaseMode.SmoothStep:
                     {
-                        newScale = math.abs(targetScale - currentScale) > Epsilon
-                            ? math.lerp(currentScale, targetScale, CurveMathUtility.GetSmoothStep(chase.SmoothTime, DeltaTime))
-                            : targetScale;
+                        newScale = floatMath.SmoothStep(currentScale, targetScale, chase.SmoothTime, DeltaTime);
                         velocity = 0f;
                         break;
                     }

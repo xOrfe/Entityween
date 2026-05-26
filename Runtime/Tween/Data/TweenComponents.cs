@@ -13,7 +13,6 @@ namespace XO.Entityween
         public bool Completed;
     }
 
-
     internal struct TweenValue<T> : IComponentData where T : unmanaged
     {
         public T StartPoint;
@@ -41,5 +40,9 @@ namespace XO.Entityween
     {
     }
 
-
+    internal struct SplineBlobRef<T> : IComponentData where T : unmanaged
+    {
+        public BlobAssetReference<SplineBlob<T>> Blob;
+        public bool IsBend;
+    }
 }

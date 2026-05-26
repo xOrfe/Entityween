@@ -9,7 +9,7 @@ namespace XO.Curve
         public SplineType SplineType;
         public bool IsClosed;
         public float TotalWeight;
-        public BlobArray<T> Points;
+        public BlobArray<T> Elements;
         public BlobArray<float> SegmentWeights;
     }
     
@@ -67,7 +67,7 @@ namespace XO.Curve
             root.SplineType = splineType;
             root.IsClosed = isClosed;
 
-            var pointArray = builder.Allocate(ref root.Points, points.Length);
+            var pointArray = builder.Allocate(ref root.Elements, points.Length);
             for (int i = 0; i < points.Length; i++)
             {
                 pointArray[i] = points[i];

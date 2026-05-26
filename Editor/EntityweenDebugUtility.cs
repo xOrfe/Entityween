@@ -109,14 +109,30 @@ namespace XO.Entityween.Editor
         private static List<Vector3> CollectPathPoints(EntityManager em, Entity ghostEntity, TweenValue<float3> value)
         {
             var points = new List<Vector3>(PathSampleCount + 1);
-            if (em.HasComponent<SplineState>(ghostEntity) && em.HasBuffer<SplineElement<float3>>(ghostEntity))
+            if (em.HasComponent<SplineBlobRef<float3>>(ghostEntity))
+            {
+                var blobRef = em.GetComponentData<SplineBlobRef<float3>>(ghostEntity).Blob;
+                if (blobRef.IsCreated)
+                {
+                    for (int i = 0; i <= PathSampleCount; i++)
+                    {
+                        float t = i / (float)PathSampleCount;
+                        float3 result = default;
+                        Spline.Sample(blobRef, t, ref result);
+                        points.Add((Vector3)result);
+                    }
+                }
+            }
+            else if (em.HasComponent<SplineState>(ghostEntity) && em.HasBuffer<SplineElement<float3>>(ghostEntity))
             {
                 var state = em.GetComponentData<SplineState>(ghostEntity);
                 var buffer = em.GetBuffer<SplineElement<float3>>(ghostEntity, true);
                 for (int i = 0; i <= PathSampleCount; i++)
                 {
                     float t = i / (float)PathSampleCount;
-                    points.Add((Vector3)Spline.Sample(state, buffer, t));
+                    float3 result = default;
+                    Spline.Sample(state, buffer, t, ref result);
+                    points.Add((Vector3)result);
                 }
             }
             else
