@@ -11,7 +11,7 @@
   <img src="Documentation~/images/signature.svg" alt="xorfe signature" width="520" />
 </p>
 
-Entityween is a Unity tweening package for GameObjects and DOTS/ECS. It provides
+Entityween is a Unity tweening package for GameObjects and Entities. It provides
 a fluent builder API and runs tween, chase, and sequence playback through
 Burst-friendly ECS systems.
 
