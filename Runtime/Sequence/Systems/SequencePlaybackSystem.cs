@@ -28,9 +28,14 @@ namespace XO.Entityween
             var controlLookup = SystemAPI.GetComponentLookup<TweenControl>(false);
             var progressLookup = SystemAPI.GetComponentLookup<PlaybackProgress>(false);
             var tweenBindingLookup = SystemAPI.GetComponentLookup<SequenceTweenBinding>(true);
-            var valueFloatLookup = SystemAPI.GetComponentLookup<TweenValue<float>>(false);
-            var valueFloat3Lookup = SystemAPI.GetComponentLookup<TweenValue<float3>>(false);
-            var valueQuatLookup = SystemAPI.GetComponentLookup<TweenValue<quaternion>>(false);
+            var rangeFloatLookup = SystemAPI.GetComponentLookup<TweenRange<float>>(false);
+            var rangeFloat2Lookup = SystemAPI.GetComponentLookup<TweenRange<float2>>(false);
+            var rangeFloat3Lookup = SystemAPI.GetComponentLookup<TweenRange<float3>>(false);
+            var rangeQuatLookup = SystemAPI.GetComponentLookup<TweenRange<quaternion>>(false);
+            var runtimeFloatLookup = SystemAPI.GetComponentLookup<TweenRuntime<float>>(false);
+            var runtimeFloat2Lookup = SystemAPI.GetComponentLookup<TweenRuntime<float2>>(false);
+            var runtimeFloat3Lookup = SystemAPI.GetComponentLookup<TweenRuntime<float3>>(false);
+            var runtimeQuatLookup = SystemAPI.GetComponentLookup<TweenRuntime<quaternion>>(false);
             var localTransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(true);
             var localToWorldLookup = SystemAPI.GetComponentLookup<LocalToWorld>(true);
             var positionLookup = SystemAPI.GetComponentLookup<ChasePosition>(false);
@@ -111,7 +116,8 @@ namespace XO.Entityween
                 {
                     var element = elements[i];
                     ProcessElement(sequenceEntity, effectiveDirection, effectiveTime, ref element, ecb, controlLookup, progressLookup, tweenBindingLookup,
-                        valueFloatLookup, valueFloat3Lookup, valueQuatLookup, localTransformLookup, localToWorldLookup,
+                        rangeFloatLookup, rangeFloat2Lookup, rangeFloat3Lookup, rangeQuatLookup,
+                        runtimeFloatLookup, runtimeFloat2Lookup, runtimeFloat3Lookup, runtimeQuatLookup, localTransformLookup, localToWorldLookup,
                         positionLookup, rotationLookup, lookLookup, scaleLookup, positionSourceLookup, rotationSourceLookup, scaleSourceLookup,
                         chaseTargetLookup, useDynamicTime, dynamicTime.Consumed, out var savedTime);
                     elements[i] = element;
@@ -135,9 +141,14 @@ namespace XO.Entityween
             ComponentLookup<TweenControl> controlLookup,
             ComponentLookup<PlaybackProgress> progressLookup,
             ComponentLookup<SequenceTweenBinding> tweenBindingLookup,
-            ComponentLookup<TweenValue<float>> valueFloatLookup,
-            ComponentLookup<TweenValue<float3>> valueFloat3Lookup,
-            ComponentLookup<TweenValue<quaternion>> valueQuatLookup,
+            ComponentLookup<TweenRange<float>> rangeFloatLookup,
+            ComponentLookup<TweenRange<float2>> rangeFloat2Lookup,
+            ComponentLookup<TweenRange<float3>> rangeFloat3Lookup,
+            ComponentLookup<TweenRange<quaternion>> rangeQuatLookup,
+            ComponentLookup<TweenRuntime<float>> runtimeFloatLookup,
+            ComponentLookup<TweenRuntime<float2>> runtimeFloat2Lookup,
+            ComponentLookup<TweenRuntime<float3>> runtimeFloat3Lookup,
+            ComponentLookup<TweenRuntime<quaternion>> runtimeQuatLookup,
             ComponentLookup<LocalTransform> localTransformLookup,
             ComponentLookup<LocalToWorld> localToWorldLookup,
             ComponentLookup<ChasePosition> positionLookup,
@@ -231,7 +242,8 @@ namespace XO.Entityween
                 if (element.Kind == TimelineActionKind.Tween && tweenBindingLookup.HasComponent(element.ActionEntity))
                 {
                     var binding = tweenBindingLookup[element.ActionEntity];
-                    ResolveStartFromCurrent(element.ActionEntity, binding, valueFloatLookup, valueFloat3Lookup, valueQuatLookup, localTransformLookup, localToWorldLookup);
+                    ResolveStartFromCurrent(element.ActionEntity, binding, rangeFloatLookup, rangeFloat3Lookup, rangeQuatLookup,
+                        runtimeFloatLookup, runtimeFloat3Lookup, runtimeQuatLookup, localTransformLookup, localToWorldLookup);
                     if (binding.TargetEntity != Entity.Null)
                     {
                         BindTweenAction(element.ActionEntity, binding, ecb, positionLookup, rotationLookup, scaleLookup,
@@ -255,9 +267,11 @@ namespace XO.Entityween
                 localElapsed = math.clamp(effectiveTime - start, 0f, element.Duration);
 
             if (element.Kind == TimelineActionKind.Tween)
-                StartOrUpdateTween(element.ActionEntity, element.Duration, localElapsed, direction, controlLookup, progressLookup);
+                StartOrUpdateTween(element.ActionEntity, element.Duration, localElapsed, direction, controlLookup, progressLookup,
+                    runtimeFloatLookup, runtimeFloat2Lookup, runtimeFloat3Lookup, runtimeQuatLookup);
 
-            if (useDynamicTime && ActionCompletedEarly(element, controlLookup, positionLookup, rotationLookup, lookLookup, scaleLookup,
+            if (useDynamicTime && ActionCompletedEarly(element, runtimeFloatLookup, runtimeFloat2Lookup, runtimeFloat3Lookup, runtimeQuatLookup,
+                    positionLookup, rotationLookup, lookLookup, scaleLookup,
                     localTransformLookup, localToWorldLookup, chaseTargetLookup))
             {
                 element.Completed = true;
@@ -302,7 +316,10 @@ namespace XO.Entityween
         }
 
         private static bool ActionCompletedEarly(SequenceElement element,
-            ComponentLookup<TweenControl> controlLookup,
+            ComponentLookup<TweenRuntime<float>> runtimeFloatLookup,
+            ComponentLookup<TweenRuntime<float2>> runtimeFloat2Lookup,
+            ComponentLookup<TweenRuntime<float3>> runtimeFloat3Lookup,
+            ComponentLookup<TweenRuntime<quaternion>> runtimeQuatLookup,
             ComponentLookup<ChasePosition> positionLookup,
             ComponentLookup<ChaseRotation> rotationLookup,
             ComponentLookup<Look> lookLookup,
@@ -314,13 +331,26 @@ namespace XO.Entityween
             switch (element.Kind)
             {
                 case TimelineActionKind.Tween:
-                    return controlLookup.TryGetComponent(element.ActionEntity, out var control) && control.Completed;
+                    return IsTweenComplete(element.ActionEntity, runtimeFloatLookup, runtimeFloat2Lookup, runtimeFloat3Lookup, runtimeQuatLookup);
                 case TimelineActionKind.Chase:
                     return IsTimelineChaseComplete(element.ActionEntity, positionLookup, rotationLookup, lookLookup, scaleLookup,
                         localTransformLookup, localToWorldLookup, chaseTargetLookup);
                 default:
                     return false;
             }
+        }
+
+        private static bool IsTweenComplete(Entity entity,
+            ComponentLookup<TweenRuntime<float>> runtimeFloatLookup,
+            ComponentLookup<TweenRuntime<float2>> runtimeFloat2Lookup,
+            ComponentLookup<TweenRuntime<float3>> runtimeFloat3Lookup,
+            ComponentLookup<TweenRuntime<quaternion>> runtimeQuatLookup)
+        {
+            if (runtimeFloatLookup.TryGetComponent(entity, out var floatRuntime)) return floatRuntime.Completed;
+            if (runtimeFloat2Lookup.TryGetComponent(entity, out var float2Runtime)) return float2Runtime.Completed;
+            if (runtimeFloat3Lookup.TryGetComponent(entity, out var float3Runtime)) return float3Runtime.Completed;
+            if (runtimeQuatLookup.TryGetComponent(entity, out var quatRuntime)) return quatRuntime.Completed;
+            return false;
         }
 
         private static bool IsTimelineChaseComplete(Entity entity,
@@ -501,23 +531,56 @@ namespace XO.Entityween
 
         private static void StartOrUpdateTween(Entity actionEntity, float duration, float elapsedTime, int effectiveDirection,
             ComponentLookup<TweenControl> controlLookup,
-            ComponentLookup<PlaybackProgress> progressLookup)
+            ComponentLookup<PlaybackProgress> progressLookup,
+            ComponentLookup<TweenRuntime<float>> runtimeFloatLookup,
+            ComponentLookup<TweenRuntime<float2>> runtimeFloat2Lookup,
+            ComponentLookup<TweenRuntime<float3>> runtimeFloat3Lookup,
+            ComponentLookup<TweenRuntime<quaternion>> runtimeQuatLookup)
         {
             if (!controlLookup.HasComponent(actionEntity)) return;
 
-            var control = controlLookup[actionEntity];
-            control.ElapsedTime = elapsedTime;
-            control.AutoKill = false;
-            control.Completed = false;
-            controlLookup[actionEntity] = control;
             controlLookup.SetComponentEnabled(actionEntity, true);
+            ResetTweenRuntime(actionEntity, runtimeFloatLookup, runtimeFloat2Lookup, runtimeFloat3Lookup, runtimeQuatLookup);
 
             if (progressLookup.HasComponent(actionEntity))
             {
                 var progress = progressLookup[actionEntity];
+                progress.ElapsedTime = elapsedTime;
                 progress.NormalizedTime = duration > 0f ? math.saturate(elapsedTime / duration) : 1f;
                 progress.Direction = effectiveDirection;
                 progressLookup[actionEntity] = progress;
+            }
+        }
+
+        private static void ResetTweenRuntime(Entity entity,
+            ComponentLookup<TweenRuntime<float>> runtimeFloatLookup,
+            ComponentLookup<TweenRuntime<float2>> runtimeFloat2Lookup,
+            ComponentLookup<TweenRuntime<float3>> runtimeFloat3Lookup,
+            ComponentLookup<TweenRuntime<quaternion>> runtimeQuatLookup)
+        {
+            if (runtimeFloatLookup.HasComponent(entity))
+            {
+                var runtime = runtimeFloatLookup[entity];
+                runtime.Completed = false;
+                runtimeFloatLookup[entity] = runtime;
+            }
+            else if (runtimeFloat2Lookup.HasComponent(entity))
+            {
+                var runtime = runtimeFloat2Lookup[entity];
+                runtime.Completed = false;
+                runtimeFloat2Lookup[entity] = runtime;
+            }
+            else if (runtimeFloat3Lookup.HasComponent(entity))
+            {
+                var runtime = runtimeFloat3Lookup[entity];
+                runtime.Completed = false;
+                runtimeFloat3Lookup[entity] = runtime;
+            }
+            else if (runtimeQuatLookup.HasComponent(entity))
+            {
+                var runtime = runtimeQuatLookup[entity];
+                runtime.Completed = false;
+                runtimeQuatLookup[entity] = runtime;
             }
         }
 
@@ -640,49 +703,60 @@ namespace XO.Entityween
         }
 
         private static void ResolveStartFromCurrent(Entity actionEntity, SequenceTweenBinding binding,
-            ComponentLookup<TweenValue<float>> valueFloatLookup,
-            ComponentLookup<TweenValue<float3>> valueFloat3Lookup,
-            ComponentLookup<TweenValue<quaternion>> valueQuatLookup,
+            ComponentLookup<TweenRange<float>> rangeFloatLookup,
+            ComponentLookup<TweenRange<float3>> rangeFloat3Lookup,
+            ComponentLookup<TweenRange<quaternion>> rangeQuatLookup,
+            ComponentLookup<TweenRuntime<float>> runtimeFloatLookup,
+            ComponentLookup<TweenRuntime<float3>> runtimeFloat3Lookup,
+            ComponentLookup<TweenRuntime<quaternion>> runtimeQuatLookup,
             ComponentLookup<LocalTransform> localTransformLookup,
             ComponentLookup<LocalToWorld> localToWorldLookup)
         {
             if (!binding.StartFromCurrent) return;
             if (!localTransformLookup.TryGetComponent(binding.TargetEntity, out var transform)) return;
 
-            if (binding.TweenType == TweenType.MoveTo && valueFloat3Lookup.HasComponent(actionEntity))
+            if (binding.TweenType == TweenType.MoveTo && rangeFloat3Lookup.HasComponent(actionEntity) && runtimeFloat3Lookup.HasComponent(actionEntity))
             {
                 var start = binding.Space == TweenSpace.World && localToWorldLookup.TryGetComponent(binding.TargetEntity, out var ltw)
                     ? ltw.Position
                     : transform.Position;
-                var value = valueFloat3Lookup[actionEntity];
-                value.StartPoint = start;
-                value.CurrentValue = start;
-                valueFloat3Lookup[actionEntity] = value;
+                var range = rangeFloat3Lookup[actionEntity];
+                var runtime = runtimeFloat3Lookup[actionEntity];
+                range.StartPoint = start;
+                runtime.CurrentValue = start;
+                rangeFloat3Lookup[actionEntity] = range;
+                runtimeFloat3Lookup[actionEntity] = runtime;
             }
-            else if (binding.TweenType == TweenType.RotateTo && valueQuatLookup.HasComponent(actionEntity))
+            else if (binding.TweenType == TweenType.RotateTo && rangeQuatLookup.HasComponent(actionEntity) && runtimeQuatLookup.HasComponent(actionEntity))
             {
                 var start = binding.Space == TweenSpace.World && localToWorldLookup.TryGetComponent(binding.TargetEntity, out var ltw)
                     ? ltw.Rotation
                     : transform.Rotation;
-                var value = valueQuatLookup[actionEntity];
-                value.StartPoint = start;
-                value.CurrentValue = start;
-                valueQuatLookup[actionEntity] = value;
+                var range = rangeQuatLookup[actionEntity];
+                var runtime = runtimeQuatLookup[actionEntity];
+                range.StartPoint = start;
+                runtime.CurrentValue = start;
+                rangeQuatLookup[actionEntity] = range;
+                runtimeQuatLookup[actionEntity] = runtime;
             }
-            else if (binding.TweenType == TweenType.ScaleTo && valueFloat3Lookup.HasComponent(actionEntity))
+            else if (binding.TweenType == TweenType.ScaleTo && rangeFloat3Lookup.HasComponent(actionEntity) && runtimeFloat3Lookup.HasComponent(actionEntity))
             {
                 var start = new float3(transform.Scale);
-                var value = valueFloat3Lookup[actionEntity];
-                value.StartPoint = start;
-                value.CurrentValue = start;
-                valueFloat3Lookup[actionEntity] = value;
+                var range = rangeFloat3Lookup[actionEntity];
+                var runtime = runtimeFloat3Lookup[actionEntity];
+                range.StartPoint = start;
+                runtime.CurrentValue = start;
+                rangeFloat3Lookup[actionEntity] = range;
+                runtimeFloat3Lookup[actionEntity] = runtime;
             }
-            else if (binding.TweenType == TweenType.ScaleToUniform && valueFloatLookup.HasComponent(actionEntity))
+            else if (binding.TweenType == TweenType.ScaleToUniform && rangeFloatLookup.HasComponent(actionEntity) && runtimeFloatLookup.HasComponent(actionEntity))
             {
-                var value = valueFloatLookup[actionEntity];
-                value.StartPoint = transform.Scale;
-                value.CurrentValue = transform.Scale;
-                valueFloatLookup[actionEntity] = value;
+                var range = rangeFloatLookup[actionEntity];
+                var runtime = runtimeFloatLookup[actionEntity];
+                range.StartPoint = transform.Scale;
+                runtime.CurrentValue = transform.Scale;
+                rangeFloatLookup[actionEntity] = range;
+                runtimeFloatLookup[actionEntity] = runtime;
             }
         }
 

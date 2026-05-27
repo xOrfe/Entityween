@@ -5,6 +5,7 @@ namespace XO.Entityween
     internal struct PlaybackProgress : IComponentData
     {
         public PlaybackTimeType TimeType;
+        public float ElapsedTime;
         public float NormalizedTime;
 
         public LoopType LoopType;

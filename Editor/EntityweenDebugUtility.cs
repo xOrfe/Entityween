@@ -62,7 +62,8 @@ namespace XO.Entityween.Editor
                 ComponentType.ReadOnly<TweenDebugVisualize>(),
                 ComponentType.ReadOnly<TweenControl>(),
                 ComponentType.ReadOnly<PlaybackProgress>(),
-                ComponentType.ReadOnly<TweenValue<float3>>());
+                ComponentType.ReadOnly<TweenRange<float3>>(),
+                ComponentType.ReadOnly<TweenRuntime<float3>>());
 
             if (query.IsEmptyIgnoreFilter) return;
 
@@ -81,10 +82,11 @@ namespace XO.Entityween.Editor
 
         private static void DrawMovePath(EntityManager em, Entity ghostEntity, Entity targetEntity)
         {
-            var value = em.GetComponentData<TweenValue<float3>>(ghostEntity);
+            var value = em.GetComponentData<TweenRuntime<float3>>(ghostEntity);
+            var range = em.GetComponentData<TweenRange<float3>>(ghostEntity);
             var progress = em.GetComponentData<PlaybackProgress>(ghostEntity);
 
-            var points = CollectPathPoints(em, ghostEntity, value);
+            var points = CollectPathPoints(em, ghostEntity, range);
             if (points.Count < 2) return;
 
             for (int i = 0; i < points.Count; i++)
@@ -106,7 +108,7 @@ namespace XO.Entityween.Editor
             Handles.Label(current, $"{progress.NormalizedTime * 100f:F0}%");
         }
 
-        private static List<Vector3> CollectPathPoints(EntityManager em, Entity ghostEntity, TweenValue<float3> value)
+        private static List<Vector3> CollectPathPoints(EntityManager em, Entity ghostEntity, TweenRange<float3> range)
         {
             var points = new List<Vector3>(PathSampleCount + 1);
             if (em.HasComponent<SplineBlobRef<float3>>(ghostEntity))
@@ -137,8 +139,8 @@ namespace XO.Entityween.Editor
             }
             else
             {
-                points.Add((Vector3)value.StartPoint);
-                points.Add((Vector3)value.EndPoint);
+                points.Add((Vector3)range.StartPoint);
+                points.Add((Vector3)range.EndPoint);
             }
 
             return points;

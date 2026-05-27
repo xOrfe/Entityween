@@ -1,4 +1,3 @@
-using System;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -26,19 +25,11 @@ namespace XO.Entityween
         public bool IsEnabled => SourceKind != TweenSplineSourceKind.None;
     }
 
-    internal struct TweenManagedBindingOptions
+    internal struct TweenTransformBindingOptions
     {
-        public object BoundTarget;
-        public string BoundMemberName;
-        public bool HasMemberBinding;
-        public Delegate UpdateCallback;
-        public object CallbackState;
-        public bool HasUpdateCallback;
         public Transform BoundTransform;
         public bool HasTransformBinding;
-        public TweenGameObjectBinding TransformBinding;
-
-        public bool HasAny => HasMemberBinding || HasUpdateCallback || HasTransformBinding;
+        public TweenTransformBinding Binding;
     }
 
     public struct TweenBuilder<T> : ISequenceActionBlueprint where T : unmanaged
@@ -51,6 +42,10 @@ namespace XO.Entityween
             where TAdapter : IEntityCommandAdapter
         {
             var entity = TweenBuilderExtensions.CreateGhostEntity(in this, adapter, false, false);
+            if (HasTransformBinding)
+            {
+                TweenBuilderExtensions.BindTransformTarget(in this, entity, adapter);
+            }
             adapter.AddComponent(entity, new TweenSequenceDriven());
             adapter.AddComponent(entity, new TimelineDriven { SequenceEntity = sequenceEntity });
             adapter.AddComponent(entity, new SequenceActionOwner { DestroyWithSequence = true });
@@ -87,7 +82,7 @@ namespace XO.Entityween
         internal bool UseChase;
         internal ChaseConfig Chase;
 
-        internal TweenManagedBindingOptions ManagedBinding;
+        internal TweenTransformBindingOptions TransformBindingOptions;
 
         internal bool IsLoop => Loop.Type != LoopType.None;
 
@@ -99,17 +94,9 @@ namespace XO.Entityween
 
         internal bool VisualizePath;
 
-        internal object BoundTarget { get => ManagedBinding.BoundTarget; set => ManagedBinding.BoundTarget = value; }
-        internal string BoundMemberName { get => ManagedBinding.BoundMemberName; set => ManagedBinding.BoundMemberName = value; }
-        internal bool HasMemberBinding { get => ManagedBinding.HasMemberBinding; set => ManagedBinding.HasMemberBinding = value; }
-
-        internal Delegate UpdateCallback { get => ManagedBinding.UpdateCallback; set => ManagedBinding.UpdateCallback = value; }
-        internal object CallbackState { get => ManagedBinding.CallbackState; set => ManagedBinding.CallbackState = value; }
-        internal bool HasUpdateCallback { get => ManagedBinding.HasUpdateCallback; set => ManagedBinding.HasUpdateCallback = value; }
-
-        internal Transform BoundTransform { get => ManagedBinding.BoundTransform; set => ManagedBinding.BoundTransform = value; }
-        internal bool HasTransformBinding { get => ManagedBinding.HasTransformBinding; set => ManagedBinding.HasTransformBinding = value; }
-        internal TweenGameObjectBinding TransformBinding { get => ManagedBinding.TransformBinding; set => ManagedBinding.TransformBinding = value; }
+        internal Transform BoundTransform { get => TransformBindingOptions.BoundTransform; set => TransformBindingOptions.BoundTransform = value; }
+        internal bool HasTransformBinding { get => TransformBindingOptions.HasTransformBinding; set => TransformBindingOptions.HasTransformBinding = value; }
+        internal TweenTransformBinding TransformBinding { get => TransformBindingOptions.Binding; set => TransformBindingOptions.Binding = value; }
 
         internal bool Error;
     }
@@ -355,10 +342,9 @@ namespace XO.Entityween
         {
             if (bp.Error) return Entity.Null;
 
-            bool hasManagedHooks = bp.ManagedBinding.HasAny;
-            if (hasManagedHooks && adapter.World == null)
+            if (bp.HasTransformBinding && adapter.World == null)
             {
-                Debug.LogError("The current EntityCommandAdapter does not support managed component bindings (e.g. Member hook, Callback, or Transform bindings) because its World context is null. Play aborted.");
+                Debug.LogError("The current EntityCommandAdapter does not support Transform bindings because its World context is null. Play aborted.");
                 return Entity.Null;
             }
 
@@ -369,9 +355,9 @@ namespace XO.Entityween
                 BindEntityTween(in bp, ghost, adapter);
             }
 
-            if (hasManagedHooks)
+            if (bp.HasTransformBinding)
             {
-                if (!BindManagedHooks(in bp, ghost, adapter))
+                if (!BindTransformTarget(in bp, ghost, adapter))
                 {
                     adapter.DestroyEntity(ghost);
                     return Entity.Null;
@@ -386,10 +372,11 @@ namespace XO.Entityween
             where TAdapter : IEntityCommandAdapter
         {
             var ghost = adapter.CreateTweenEntity<T>();
-            adapter.SetComponent(ghost, new TweenControl { ElapsedTime = -1f, SecondsToPlay = bp.SecondsToPlay, EaseType = bp.EaseType, AutoKill = autoKill, Completed = false });
+            adapter.SetComponent(ghost, new TweenControl { SecondsToPlay = bp.SecondsToPlay, EaseType = bp.EaseType, AutoKill = autoKill });
             adapter.SetComponentEnabled<TweenControl>(ghost, startEnabled);
             adapter.SetComponent(ghost, new PlaybackProgress
             {
+                ElapsedTime = -1f,
                 NormalizedTime = 0f,
                 TimeType = bp.TimeType,
                 LoopType = bp.IsLoop ? bp.Loop.Type : LoopType.None,
@@ -399,7 +386,8 @@ namespace XO.Entityween
             });
             adapter.SetComponent(ghost, new TweenTarget { Entity = bp.Entity, TweenType = bp.TweenType, Space = bp.Space });
 
-            adapter.SetComponent(ghost, new TweenValue<T> { StartPoint = bp.StartPoint, EndPoint = bp.EndPoint });
+            adapter.SetComponent(ghost, new TweenRange<T> { StartPoint = bp.StartPoint, EndPoint = bp.EndPoint });
+            adapter.SetComponent(ghost, new TweenRuntime<T> { Completed = false });
             if (bp.StartFromCurrent)
                 adapter.AddComponent(ghost, new TweenStartFromCurrent { TargetEntity = bp.Entity, TweenType = bp.TweenType, Space = bp.Space });
 
@@ -518,110 +506,36 @@ namespace XO.Entityween
             }
         }
 
-        internal static bool BindManagedHooks<T, TAdapter>(in TweenBuilder<T> bp, Entity ghost, TAdapter adapter)
+        internal static bool BindTransformTarget<T, TAdapter>(in TweenBuilder<T> bp, Entity ghost, TAdapter adapter)
             where T : unmanaged
             where TAdapter : IEntityCommandAdapter
         {
             var world = adapter.World;
             if (world == null)
             {
-                Debug.LogError("Adapter World is null. Cannot bind managed hooks.");
+                Debug.LogError("Adapter World is null. Cannot bind Transform target.");
                 return false;
             }
 
-            if (bp.HasMemberBinding)
+            if (bp.BoundTransform == null)
             {
-                if (!TweenMemberBinder.TryCreateSetter<T>(bp.BoundTarget, bp.BoundMemberName, out var setter, out var error))
-                {
-                    Debug.LogError($"Failed to bind member '{bp.BoundMemberName}' on target '{bp.BoundTarget?.GetType().Name}': {error}");
-                    return false;
-                }
-
-                TweenManagedRegistry.RegisterMember<T>(world, ghost, bp.BoundTarget, bp.BoundMemberName, setter);
-                adapter.AddComponent(ghost, new TweenMemberHook<T>());
+                Debug.LogError("BindTransform targetTransform is null.");
+                return false;
             }
 
-            if (bp.HasUpdateCallback)
+            if (!adapter.SupportsManagedComponents)
             {
-                TweenManagedRegistry.RegisterCallback<T>(
-                    world,
-                    ghost,
-                    bp.CallbackState == null ? (Action<T>)bp.UpdateCallback : null,
-                    bp.CallbackState,
-                    bp.CallbackState != null ? (Action<object, T>)bp.UpdateCallback : null
-                );
-                adapter.AddComponent(ghost, new TweenCallbackHook<T>());
+                Debug.LogError("BindTransform requires an EntityManager-backed Play call because Transform references are stored as managed components.");
+                return false;
             }
 
-            if (bp.HasTransformBinding)
+            adapter.AddComponentObject(ghost, new TweenTransformReference { Transform = bp.BoundTransform });
+            adapter.AddComponent(ghost, new TweenTransformTarget
             {
-                TweenManagedRegistry.RegisterGameObject(world, ghost, bp.BoundTransform);
-                adapter.AddComponent(ghost, new TweenGameObjectTarget
-                {
-                    Binding = bp.TransformBinding,
-                    Space = bp.Space
-                });
-            }
-
+                Binding = bp.TransformBinding,
+                Space = bp.Space
+            });
             return true;
-        }
-
-        public static TweenBuilder<T> Bind<T>(
-            this TweenBuilder<T> bp,
-            object target,
-            string memberName)
-            where T : unmanaged
-        {
-            if (target == null)
-            {
-                Debug.LogError("Bind target is null.");
-                bp.Error = true;
-                return bp;
-            }
-            if (string.IsNullOrEmpty(memberName))
-            {
-                Debug.LogError("Bind memberName is null or empty.");
-                bp.Error = true;
-                return bp;
-            }
-            bp.BoundTarget = target;
-            bp.BoundMemberName = memberName;
-            bp.HasMemberBinding = true;
-            return bp;
-        }
-
-        public static TweenBuilder<T> OnUpdate<T>(
-            this TweenBuilder<T> bp,
-            Action<T> callback)
-            where T : unmanaged
-        {
-            if (callback == null)
-            {
-                Debug.LogError("OnUpdate callback is null.");
-                bp.Error = true;
-                return bp;
-            }
-            bp.UpdateCallback = callback;
-            bp.HasUpdateCallback = true;
-            return bp;
-        }
-
-        public static TweenBuilder<T> OnUpdate<T>(
-            this TweenBuilder<T> bp,
-            object state,
-            Action<object, T> callback)
-            where T : unmanaged
-        {
-            if (callback == null)
-            {
-                Debug.LogError("OnUpdate callback is null.");
-                bp.Error = true;
-                return bp;
-            }
-            bp.UpdateCallback = callback;
-            bp.CallbackState = state;
-            bp.HasUpdateCallback = true;
-            return bp;
         }
 
         public static TweenBuilder<float3> BindTransform(
@@ -639,13 +553,13 @@ namespace XO.Entityween
             {
                 bp.BoundTransform = targetTransform;
                 bp.HasTransformBinding = true;
-                bp.TransformBinding = TweenGameObjectBinding.Position;
+                bp.TransformBinding = TweenTransformBinding.Position;
             }
             else if (bp.TweenType == TweenType.ScaleTo)
             {
                 bp.BoundTransform = targetTransform;
                 bp.HasTransformBinding = true;
-                bp.TransformBinding = TweenGameObjectBinding.Scale;
+                bp.TransformBinding = TweenTransformBinding.Scale;
             }
             else
             {
@@ -670,7 +584,7 @@ namespace XO.Entityween
             {
                 bp.BoundTransform = targetTransform;
                 bp.HasTransformBinding = true;
-                bp.TransformBinding = TweenGameObjectBinding.Rotation;
+                bp.TransformBinding = TweenTransformBinding.Rotation;
             }
             else
             {
@@ -695,7 +609,7 @@ namespace XO.Entityween
             {
                 bp.BoundTransform = targetTransform;
                 bp.HasTransformBinding = true;
-                bp.TransformBinding = TweenGameObjectBinding.Scale;
+                bp.TransformBinding = TweenTransformBinding.ScaleUniform;
             }
             else
             {

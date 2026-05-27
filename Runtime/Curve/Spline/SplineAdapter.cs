@@ -20,7 +20,7 @@ namespace XO.Curve
         T GetElement(int index);
         T GetKnot(int index);
     }
-
+    
     public static partial class Spline
     {
         public struct BlobSplineAdapter<T> : ISplineAdapter<T> where T : unmanaged

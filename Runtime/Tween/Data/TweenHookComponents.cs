@@ -1,25 +1,24 @@
 using Unity.Entities;
+using UnityEngine;
 
 namespace XO.Entityween
 {
-    internal enum TweenGameObjectBinding : byte
+    internal enum TweenTransformBinding : byte
     {
         Position,
         Rotation,
-        Scale
+        Scale,
+        ScaleUniform
     }
 
-    internal struct TweenGameObjectTarget : IComponentData
+    internal struct TweenTransformTarget : IComponentData
     {
-        public TweenGameObjectBinding Binding;
+        public TweenTransformBinding Binding;
         public TweenSpace Space;
     }
 
-    internal struct TweenMemberHook<T> : IComponentData where T : unmanaged
+    internal sealed class TweenTransformReference : IComponentData
     {
-    }
-
-    internal struct TweenCallbackHook<T> : IComponentData where T : unmanaged
-    {
+        public Transform Transform;
     }
 }

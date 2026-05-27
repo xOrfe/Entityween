@@ -86,14 +86,13 @@ entity
 | `.Along(blob)` | Follow a `SplineBlob<T>`. |
 | `.Bend(blob)` | Bend the start-to-end tween line by a spline blob. |
 | `.Chase(...)` | Settle the final value with chase behavior. |
-| `.Bind(target, memberName)` | Write values to a public field or property. |
-| `.OnUpdate(callback)` | Receive calculated values each update. |
 | `.BindTransform(transform)` | Write values to a GameObject transform. |
 
-## GameObject and Managed Tweens
+## GameObject Tweens
 
 GameObjects use the same builder style, but playback must run on a world because
-managed bindings sync on the main thread.
+their transforms are registered into a `TransformAccessArray` and written by a
+Burst-compiled transform job.
 
 ```csharp
 transform
@@ -102,15 +101,8 @@ transform
     .Play(world.EntityManager);
 ```
 
-```csharp
-Entity.Null
-    .FloatTo(1f, 0.25f)
-    .Bind(healthBar, nameof(HealthBar.FillAmount))
-    .Play(world.EntityManager);
-```
-
-Managed bindings are for GameObjects, C# objects, and callbacks. Avoid them in
-Burst jobs, Bakers, and parallel writers.
+GameObject transform bindings are transform-only. Arbitrary managed member
+setters and update callbacks are intentionally not part of the runtime path.
 
 ## Chase API
 

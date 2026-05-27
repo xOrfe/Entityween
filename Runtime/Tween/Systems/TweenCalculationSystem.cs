@@ -7,7 +7,6 @@ using XO.Curve;
 
 namespace XO.Entityween
 {
-
     [BurstCompile]
     [UpdateInGroup(typeof(EntityweenTweenGroup))]
     [RequireMatchingQueriesForUpdate]
@@ -17,27 +16,19 @@ namespace XO.Entityween
         private EntityQuery _queryFloat2;
         private EntityQuery _queryFloat3;
         private EntityQuery _queryQuat;
-        private EntityQuery _resolvePositionQuery;
-        private EntityQuery _resolveRotationQuery;
-        private EntityQuery _resolveLookQuery;
-        private EntityQuery _resolveScaleQuery;
 
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
-            _queryFloat = SystemAPI.QueryBuilder().WithAll<TweenControl, PlaybackProgress, TweenValue<float>>().Build();
-            _queryFloat2 = SystemAPI.QueryBuilder().WithAll<TweenControl, PlaybackProgress, TweenValue<float2>>().Build();
-            _queryFloat3 = SystemAPI.QueryBuilder().WithAll<TweenControl, PlaybackProgress, TweenValue<float3>>().Build();
-            _queryQuat = SystemAPI.QueryBuilder().WithAll<TweenControl, PlaybackProgress, TweenValue<quaternion>>().Build();
-
-            _resolvePositionQuery = SystemAPI.QueryBuilder().WithAllRW<ChasePosition, ChasePositionTweenSource>().Build();
-            _resolveRotationQuery = SystemAPI.QueryBuilder().WithAllRW<ChaseRotation, ChaseRotationTweenSource>().Build();
-            _resolveLookQuery = SystemAPI.QueryBuilder().WithAllRW<Look, LookTweenSource>().Build();
-            _resolveScaleQuery = SystemAPI.QueryBuilder().WithAllRW<ChaseScale, ChaseScaleTweenSource>().Build();
+            _queryFloat = SystemAPI.QueryBuilder().WithAll<TweenControl, PlaybackProgress, TweenRange<float>, TweenRuntime<float>>().Build();
+            _queryFloat2 = SystemAPI.QueryBuilder().WithAll<TweenControl, PlaybackProgress, TweenRange<float2>, TweenRuntime<float2>>().Build();
+            _queryFloat3 = SystemAPI.QueryBuilder().WithAll<TweenControl, PlaybackProgress, TweenRange<float3>, TweenRuntime<float3>>().Build();
+            _queryQuat = SystemAPI.QueryBuilder().WithAll<TweenControl, PlaybackProgress, TweenRange<quaternion>, TweenRuntime<quaternion>>().Build();
 
             state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
         }
 
+        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var dt = SystemAPI.Time.DeltaTime;
@@ -46,7 +37,7 @@ namespace XO.Entityween
                 .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
 
             var entityType = SystemAPI.GetEntityTypeHandle();
-            var controlHandle = SystemAPI.GetComponentTypeHandle<TweenControl>();
+            var controlHandle = SystemAPI.GetComponentTypeHandle<TweenControl>(true);
             var progressHandle = SystemAPI.GetComponentTypeHandle<PlaybackProgress>();
             var sequenceDrivenHandle = SystemAPI.GetComponentTypeHandle<TweenSequenceDriven>(true);
             var splineStateHandle = SystemAPI.GetComponentTypeHandle<SplineState>(true);
@@ -69,7 +60,8 @@ namespace XO.Entityween
                     SequenceDrivenHandle = sequenceDrivenHandle,
                     SplineStateHandle = splineStateHandle,
                     SplineBlobRefHandle = splineBlobRefFloatHandle,
-                    ValueHandle = SystemAPI.GetComponentTypeHandle<TweenValue<float>>(),
+                    RangeHandle = SystemAPI.GetComponentTypeHandle<TweenRange<float>>(true),
+                    RuntimeHandle = SystemAPI.GetComponentTypeHandle<TweenRuntime<float>>(),
                     SplineHandle = SystemAPI.GetBufferTypeHandle<SplineElement<float>>(true)
                 }.ScheduleParallel(_queryFloat, state.Dependency);
             }
@@ -88,7 +80,8 @@ namespace XO.Entityween
                     SequenceDrivenHandle = sequenceDrivenHandle,
                     SplineStateHandle = splineStateHandle,
                     SplineBlobRefHandle = splineBlobRefFloat2Handle,
-                    ValueHandle = SystemAPI.GetComponentTypeHandle<TweenValue<float2>>(),
+                    RangeHandle = SystemAPI.GetComponentTypeHandle<TweenRange<float2>>(true),
+                    RuntimeHandle = SystemAPI.GetComponentTypeHandle<TweenRuntime<float2>>(),
                     SplineHandle = SystemAPI.GetBufferTypeHandle<SplineElement<float2>>(true)
                 }.ScheduleParallel(_queryFloat2, state.Dependency);
             }
@@ -107,7 +100,8 @@ namespace XO.Entityween
                     SequenceDrivenHandle = sequenceDrivenHandle,
                     SplineStateHandle = splineStateHandle,
                     SplineBlobRefHandle = splineBlobRefFloat3Handle,
-                    ValueHandle = SystemAPI.GetComponentTypeHandle<TweenValue<float3>>(),
+                    RangeHandle = SystemAPI.GetComponentTypeHandle<TweenRange<float3>>(true),
+                    RuntimeHandle = SystemAPI.GetComponentTypeHandle<TweenRuntime<float3>>(),
                     SplineHandle = SystemAPI.GetBufferTypeHandle<SplineElement<float3>>(true)
                 }.ScheduleParallel(_queryFloat3, state.Dependency);
             }
@@ -126,67 +120,10 @@ namespace XO.Entityween
                     SequenceDrivenHandle = sequenceDrivenHandle,
                     SplineStateHandle = splineStateHandle,
                     SplineBlobRefHandle = splineBlobRefQuatHandle,
-                    ValueHandle = SystemAPI.GetComponentTypeHandle<TweenValue<quaternion>>(),
+                    RangeHandle = SystemAPI.GetComponentTypeHandle<TweenRange<quaternion>>(true),
+                    RuntimeHandle = SystemAPI.GetComponentTypeHandle<TweenRuntime<quaternion>>(),
                     SplineHandle = SystemAPI.GetBufferTypeHandle<SplineElement<quaternion>>(true)
                 }.ScheduleParallel(_queryQuat, state.Dependency);
-            }
-
-            var controlLookup = SystemAPI.GetComponentLookup<TweenControl>(true);
-            var valueFloatLookup = SystemAPI.GetComponentLookup<TweenValue<float>>(true);
-            var valueFloat3Lookup = SystemAPI.GetComponentLookup<TweenValue<float3>>(true);
-            var valueQuatLookup = SystemAPI.GetComponentLookup<TweenValue<quaternion>>(true);
-
-            if (!_resolvePositionQuery.IsEmptyIgnoreFilter)
-            {
-                state.Dependency = new ChaseResolvePositionJob
-                {
-                    ValueFloat3Lookup = valueFloat3Lookup,
-                    ControlLookup = controlLookup,
-                    Ecb = ecb,
-                    ChaseHandle = SystemAPI.GetComponentTypeHandle<ChasePosition>(),
-                    SourceHandle = SystemAPI.GetComponentTypeHandle<ChasePositionTweenSource>(),
-                    EntityHandle = entityType
-                }.ScheduleParallel(_resolvePositionQuery, state.Dependency);
-            }
-
-            if (!_resolveRotationQuery.IsEmptyIgnoreFilter)
-            {
-                state.Dependency = new ChaseResolveRotationJob
-                {
-                    ValueQuatLookup = valueQuatLookup,
-                    ControlLookup = controlLookup,
-                    Ecb = ecb,
-                    ChaseHandle = SystemAPI.GetComponentTypeHandle<ChaseRotation>(),
-                    SourceHandle = SystemAPI.GetComponentTypeHandle<ChaseRotationTweenSource>(),
-                    EntityHandle = entityType
-                }.ScheduleParallel(_resolveRotationQuery, state.Dependency);
-            }
-
-            if (!_resolveLookQuery.IsEmptyIgnoreFilter)
-            {
-                state.Dependency = new ChaseResolveLookJob
-                {
-                    ValueFloat3Lookup = valueFloat3Lookup,
-                    ControlLookup = controlLookup,
-                    Ecb = ecb,
-                    LookHandle = SystemAPI.GetComponentTypeHandle<Look>(),
-                    SourceHandle = SystemAPI.GetComponentTypeHandle<LookTweenSource>(),
-                    EntityHandle = entityType
-                }.ScheduleParallel(_resolveLookQuery, state.Dependency);
-            }
-
-            if (!_resolveScaleQuery.IsEmptyIgnoreFilter)
-            {
-                state.Dependency = new ChaseResolveScaleJob
-                {
-                    ValueFloatLookup = valueFloatLookup,
-                    ValueFloat3Lookup = valueFloat3Lookup,
-                    ControlLookup = controlLookup,
-                    Ecb = ecb,
-                    ChaseHandle = SystemAPI.GetComponentTypeHandle<ChaseScale>(),
-                    SourceHandle = SystemAPI.GetComponentTypeHandle<ChaseScaleTweenSource>(),
-                    EntityHandle = entityType
-                }.ScheduleParallel(_resolveScaleQuery, state.Dependency);
             }
         }
     }
@@ -200,22 +137,25 @@ namespace XO.Entityween
         public TMath Math;
 
         [ReadOnly] public EntityTypeHandle EntityType;
-        public ComponentTypeHandle<TweenControl> ControlHandle;
+        [ReadOnly] public ComponentTypeHandle<TweenControl> ControlHandle;
         public ComponentTypeHandle<PlaybackProgress> ProgressHandle;
 
         [ReadOnly] public ComponentTypeHandle<TweenSequenceDriven> SequenceDrivenHandle;
         [ReadOnly] public ComponentTypeHandle<SplineState> SplineStateHandle;
         [ReadOnly] public ComponentTypeHandle<SplineBlobRef<T>> SplineBlobRefHandle;
 
-        public ComponentTypeHandle<TweenValue<T>> ValueHandle;
+        [ReadOnly] public ComponentTypeHandle<TweenRange<T>> RangeHandle;
+        public ComponentTypeHandle<TweenRuntime<T>> RuntimeHandle;
         [ReadOnly] public BufferTypeHandle<SplineElement<T>> SplineHandle;
 
+        [BurstCompile]
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
             var entities = chunk.GetNativeArray(EntityType);
             var controls = chunk.GetNativeArray(ref ControlHandle);
             var progresses = chunk.GetNativeArray(ref ProgressHandle);
-            var values = chunk.GetNativeArray(ref ValueHandle);
+            var ranges = chunk.GetNativeArray(ref RangeHandle);
+            var runtimes = chunk.GetNativeArray(ref RuntimeHandle);
 
             var isSequenceDriven = chunk.Has(ref SequenceDrivenHandle);
             var hasSplineState = chunk.Has(ref SplineStateHandle);
@@ -230,20 +170,21 @@ namespace XO.Entityween
             {
                 var control = controls[i];
                 var progress = progresses[i];
-                var value = values[i];
+                var range = ranges[i];
+                var runtime = runtimes[i];
 
                 var timeDir = progress.Direction == 0 ? 1 : progress.Direction;
                 if (!isSequenceDriven)
-                    control.ElapsedTime += PlaybackUtilities.GetDeltaTime(progress.TimeType, DeltaTime, UnscaledDeltaTime) * timeDir;
+                    progress.ElapsedTime += PlaybackUtilities.GetDeltaTime(progress.TimeType, DeltaTime, UnscaledDeltaTime) * timeDir;
 
                 PlaybackUtilities.CalculateProgress(
-                    ref control.ElapsedTime,
+                    ref progress.ElapsedTime,
                     control.SecondsToPlay,
                     ref progress,
                     out var normalizedTime,
                     out var isFinished);
 
-                control.Completed = isFinished;
+                runtime.Completed = isFinished;
                 progress.NormalizedTime = normalizedTime;
 
                 float easedT;
@@ -266,10 +207,10 @@ namespace XO.Entityween
                     {
                         var provider = new Spline.BlobSplineAdapter<T>(blobRef);
                         var sample = Spline.SampleGeneric<T, Spline.BlobSplineAdapter<T>, TMath>(ref provider, easedT, Math);
-                        value.CurrentValue = spline.IsBend && provider.KnotCount >= 2
+                        runtime.CurrentValue = spline.IsBend && provider.KnotCount >= 2
                             ? Math.Bend(
-                                value.StartPoint,
-                                value.EndPoint,
+                                range.StartPoint,
+                                range.EndPoint,
                                 provider.GetKnot(0),
                                 provider.GetKnot(provider.KnotCount - 1),
                                 sample,
@@ -278,220 +219,26 @@ namespace XO.Entityween
                     }
                     else
                     {
-                        value.CurrentValue = Math.Lerp(value.StartPoint, value.EndPoint, easedT);
+                        runtime.CurrentValue = Math.Lerp(range.StartPoint, range.EndPoint, easedT);
                     }
                 }
                 else if (hasSplineState && splineAccessor.Length > 0)
                 {
                     var provider = new Spline.BufferSplineAdapter<T>(splineStates[i], splineAccessor[i]);
-                    value.CurrentValue = Spline.SampleGeneric<T, Spline.BufferSplineAdapter<T>, TMath>(ref provider, easedT, Math);
+                    runtime.CurrentValue = Spline.SampleGeneric<T, Spline.BufferSplineAdapter<T>, TMath>(ref provider, easedT, Math);
                 }
                 else
                 {
-                    value.CurrentValue = Math.Lerp(value.StartPoint, value.EndPoint, easedT);
+                    runtime.CurrentValue = Math.Lerp(range.StartPoint, range.EndPoint, easedT);
                 }
 
-                controls[i] = control;
                 progresses[i] = progress;
-                values[i] = value;
+                runtimes[i] = runtime;
 
                 if (isFinished)
                 {
                     if (control.AutoKill) Ecb.DestroyEntity(unfilteredChunkIndex, entities[i]);
                     else Ecb.SetComponentEnabled<TweenControl>(unfilteredChunkIndex, entities[i], false);
-                }
-            }
-        }
-    }
-
-    [BurstCompile]
-    internal struct ChaseResolvePositionJob : IJobChunk
-    {
-        [ReadOnly] public ComponentLookup<TweenValue<float3>> ValueFloat3Lookup;
-        [ReadOnly] public ComponentLookup<TweenControl> ControlLookup;
-        public EntityCommandBuffer.ParallelWriter Ecb;
-
-        public ComponentTypeHandle<ChasePosition> ChaseHandle;
-        public ComponentTypeHandle<ChasePositionTweenSource> SourceHandle;
-        public EntityTypeHandle EntityHandle;
-
-        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
-        {
-            var chasePositions = chunk.GetNativeArray(ref ChaseHandle);
-            var sources = chunk.GetNativeArray(ref SourceHandle);
-            var entities = chunk.GetNativeArray(EntityHandle);
-
-            var enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
-            while (enumerator.NextEntityIndex(out int i))
-            {
-                var source = sources[i];
-                var ghost = source.GhostEntity;
-
-                bool sourceCompleted = source.SourceCompleted ||
-                    (ControlLookup.TryGetComponent(ghost, out var ctrl) && ctrl.Completed);
-
-                if (ValueFloat3Lookup.TryGetComponent(ghost, out var value))
-                {
-                    var cp = chasePositions[i];
-                    cp.TargetPosition = value.CurrentValue;
-                    cp.Space = source.Space;
-                    chasePositions[i] = cp;
-                }
-
-                if (sourceCompleted && !chasePositions[i].KillOnChase)
-                {
-                    Ecb.RemoveComponent<ChasePositionTweenSource>(unfilteredChunkIndex, entities[i]);
-                }
-                else
-                {
-                    source.SourceCompleted = sourceCompleted;
-                    sources[i] = source;
-                }
-            }
-        }
-    }
-
-    [BurstCompile]
-    internal struct ChaseResolveRotationJob : IJobChunk
-    {
-        [ReadOnly] public ComponentLookup<TweenValue<quaternion>> ValueQuatLookup;
-        [ReadOnly] public ComponentLookup<TweenControl> ControlLookup;
-        public EntityCommandBuffer.ParallelWriter Ecb;
-
-        public ComponentTypeHandle<ChaseRotation> ChaseHandle;
-        public ComponentTypeHandle<ChaseRotationTweenSource> SourceHandle;
-        public EntityTypeHandle EntityHandle;
-
-        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
-        {
-            var chaseRotations = chunk.GetNativeArray(ref ChaseHandle);
-            var sources = chunk.GetNativeArray(ref SourceHandle);
-            var entities = chunk.GetNativeArray(EntityHandle);
-
-            var enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
-            while (enumerator.NextEntityIndex(out int i))
-            {
-                var source = sources[i];
-                var ghost = source.GhostEntity;
-
-                bool sourceCompleted = source.SourceCompleted ||
-                    (ControlLookup.TryGetComponent(ghost, out var ctrl) && ctrl.Completed);
-
-                if (ValueQuatLookup.TryGetComponent(ghost, out var value))
-                {
-                    var cr = chaseRotations[i];
-                    cr.TargetQuaternion = value.CurrentValue;
-                    cr.Space = source.Space;
-                    chaseRotations[i] = cr;
-                }
-
-                if (sourceCompleted && !chaseRotations[i].KillOnChase)
-                {
-                    Ecb.RemoveComponent<ChaseRotationTweenSource>(unfilteredChunkIndex, entities[i]);
-                }
-                else
-                {
-                    source.SourceCompleted = sourceCompleted;
-                    sources[i] = source;
-                }
-            }
-        }
-    }
-
-    [BurstCompile]
-    internal struct ChaseResolveLookJob : IJobChunk
-    {
-        [ReadOnly] public ComponentLookup<TweenValue<float3>> ValueFloat3Lookup;
-        [ReadOnly] public ComponentLookup<TweenControl> ControlLookup;
-        public EntityCommandBuffer.ParallelWriter Ecb;
-
-        public ComponentTypeHandle<Look> LookHandle;
-        public ComponentTypeHandle<LookTweenSource> SourceHandle;
-        public EntityTypeHandle EntityHandle;
-
-        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
-        {
-            var looks = chunk.GetNativeArray(ref LookHandle);
-            var sources = chunk.GetNativeArray(ref SourceHandle);
-            var entities = chunk.GetNativeArray(EntityHandle);
-
-            var enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
-            while (enumerator.NextEntityIndex(out int i))
-            {
-                var source = sources[i];
-                var ghost = source.GhostEntity;
-
-                bool sourceCompleted = source.SourceCompleted ||
-                    (ControlLookup.TryGetComponent(ghost, out var ctrl) && ctrl.Completed);
-
-                if (ValueFloat3Lookup.TryGetComponent(ghost, out var value))
-                {
-                    var lk = looks[i];
-                    lk.TargetPosition = value.CurrentValue;
-                    looks[i] = lk;
-                }
-
-                if (sourceCompleted && !looks[i].KillOnChase)
-                {
-                    Ecb.RemoveComponent<LookTweenSource>(unfilteredChunkIndex, entities[i]);
-                }
-                else
-                {
-                    source.SourceCompleted = sourceCompleted;
-                    sources[i] = source;
-                }
-            }
-        }
-    }
-
-    [BurstCompile]
-    internal struct ChaseResolveScaleJob : IJobChunk
-    {
-        [ReadOnly] public ComponentLookup<TweenValue<float>> ValueFloatLookup;
-        [ReadOnly] public ComponentLookup<TweenValue<float3>> ValueFloat3Lookup;
-        [ReadOnly] public ComponentLookup<TweenControl> ControlLookup;
-        public EntityCommandBuffer.ParallelWriter Ecb;
-
-        public ComponentTypeHandle<ChaseScale> ChaseHandle;
-        public ComponentTypeHandle<ChaseScaleTweenSource> SourceHandle;
-        public EntityTypeHandle EntityHandle;
-
-        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
-        {
-            var chaseScales = chunk.GetNativeArray(ref ChaseHandle);
-            var sources = chunk.GetNativeArray(ref SourceHandle);
-            var entities = chunk.GetNativeArray(EntityHandle);
-
-            var enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
-            while (enumerator.NextEntityIndex(out int i))
-            {
-                var source = sources[i];
-                var ghost = source.GhostEntity;
-
-                bool sourceCompleted = source.SourceCompleted ||
-                    (ControlLookup.TryGetComponent(ghost, out var ctrl) && ctrl.Completed);
-
-                if (chaseScales[i].IsUniform && ValueFloatLookup.TryGetComponent(ghost, out var uniformValue))
-                {
-                    var cs = chaseScales[i];
-                    cs.TargetScale = new float3(uniformValue.CurrentValue);
-                    chaseScales[i] = cs;
-                }
-                else if (ValueFloat3Lookup.TryGetComponent(ghost, out var value))
-                {
-                    var cs = chaseScales[i];
-                    cs.TargetScale = value.CurrentValue;
-                    chaseScales[i] = cs;
-                }
-
-                if (sourceCompleted && !chaseScales[i].KillOnChase)
-                {
-                    Ecb.RemoveComponent<ChaseScaleTweenSource>(unfilteredChunkIndex, entities[i]);
-                }
-                else
-                {
-                    source.SourceCompleted = sourceCompleted;
-                    sources[i] = source;
                 }
             }
         }

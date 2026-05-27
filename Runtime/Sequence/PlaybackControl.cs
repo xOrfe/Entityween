@@ -120,10 +120,10 @@ namespace XO.Entityween
             }
             else if (em.HasComponent<TweenControl>(entity))
             {
-                if (em.HasComponent<TweenValue<float>>(entity)) CompleteTween<float, FloatMath>(entity, em);
-                else if (em.HasComponent<TweenValue<float2>>(entity)) CompleteTween<float2, Float2Math>(entity, em);
-                else if (em.HasComponent<TweenValue<float3>>(entity)) CompleteTween<float3, Float3Math>(entity, em);
-                else if (em.HasComponent<TweenValue<quaternion>>(entity)) CompleteTween<quaternion, QuaternionMath>(entity, em);
+                if (em.HasComponent<TweenRuntime<float>>(entity)) CompleteTween<float, FloatMath>(entity, em);
+                else if (em.HasComponent<TweenRuntime<float2>>(entity)) CompleteTween<float2, Float2Math>(entity, em);
+                else if (em.HasComponent<TweenRuntime<float3>>(entity)) CompleteTween<float3, Float3Math>(entity, em);
+                else if (em.HasComponent<TweenRuntime<quaternion>>(entity)) CompleteTween<quaternion, QuaternionMath>(entity, em);
             }
             else
             {
@@ -175,11 +175,15 @@ namespace XO.Entityween
             if (em.HasComponent<TweenControl>(entity))
             {
                 var control = em.GetComponentData<TweenControl>(entity);
-                if (control.Completed)
+                if (IsTweenComplete(entity, em))
                 {
-                    control.Completed = false;
-                    control.ElapsedTime = control.SecondsToPlay;
-                    em.SetComponentData(entity, control);
+                    ResetTweenCompleted(entity, em);
+                    if (em.HasComponent<PlaybackProgress>(entity))
+                    {
+                        var progress = em.GetComponentData<PlaybackProgress>(entity);
+                        progress.ElapsedTime = control.SecondsToPlay;
+                        em.SetComponentData(entity, progress);
+                    }
                 }
                 em.SetComponentEnabled<TweenControl>(entity, true);
             }
@@ -189,13 +193,14 @@ namespace XO.Entityween
             where T : unmanaged
             where TMath : struct, ICurveMath<T>
         {
-            if (!em.HasComponent<TweenControl>(ghost) || !em.HasComponent<TweenValue<T>>(ghost)) return;
+            if (!em.HasComponent<TweenControl>(ghost) || !em.HasComponent<TweenRange<T>>(ghost) || !em.HasComponent<TweenRuntime<T>>(ghost)) return;
 
             var control = em.GetComponentData<TweenControl>(ghost);
-            var value = em.GetComponentData<TweenValue<T>>(ghost);
+            var range = em.GetComponentData<TweenRange<T>>(ghost);
+            var runtime = em.GetComponentData<TweenRuntime<T>>(ghost);
 
             float easedT = Ease.EasedT(1f, control.EaseType);
-            T endValue = value.EndPoint;
+            T endValue = range.EndPoint;
 
             if (em.HasComponent<SplineBlobRef<T>>(ghost))
             {
@@ -208,8 +213,8 @@ namespace XO.Entityween
                     TMath mathProvider = default;
                     endValue = spline.IsBend && provider.KnotCount >= 2
                         ? mathProvider.Bend(
-                            value.StartPoint,
-                            value.EndPoint,
+                            range.StartPoint,
+                            range.EndPoint,
                             provider.GetKnot(0),
                             provider.GetKnot(provider.KnotCount - 1),
                             sample,
@@ -225,8 +230,8 @@ namespace XO.Entityween
                 endValue = Spline.SampleGeneric<T, Spline.BufferSplineAdapter<T>, TMath>(ref provider, easedT);
             }
 
-            value.CurrentValue = endValue;
-            em.SetComponentData(ghost, value);
+            runtime.CurrentValue = endValue;
+            em.SetComponentData(ghost, runtime);
 
             ApplyEndValueToTarget<T>(ghost, endValue, em);
 
@@ -236,18 +241,55 @@ namespace XO.Entityween
             }
             else
             {
-                control.Completed = true;
-                control.ElapsedTime = control.SecondsToPlay;
-                em.SetComponentData(ghost, control);
+                runtime.Completed = true;
+                em.SetComponentData(ghost, runtime);
 
                 if (em.HasComponent<PlaybackProgress>(ghost))
                 {
                     var progress = em.GetComponentData<PlaybackProgress>(ghost);
+                    progress.ElapsedTime = control.SecondsToPlay;
                     progress.NormalizedTime = 1f;
                     em.SetComponentData(ghost, progress);
                 }
 
                 em.SetComponentEnabled<TweenControl>(ghost, false);
+            }
+        }
+
+        private static bool IsTweenComplete(Entity entity, EntityManager em)
+        {
+            if (em.HasComponent<TweenRuntime<float>>(entity)) return em.GetComponentData<TweenRuntime<float>>(entity).Completed;
+            if (em.HasComponent<TweenRuntime<float2>>(entity)) return em.GetComponentData<TweenRuntime<float2>>(entity).Completed;
+            if (em.HasComponent<TweenRuntime<float3>>(entity)) return em.GetComponentData<TweenRuntime<float3>>(entity).Completed;
+            if (em.HasComponent<TweenRuntime<quaternion>>(entity)) return em.GetComponentData<TweenRuntime<quaternion>>(entity).Completed;
+            return false;
+        }
+
+        private static void ResetTweenCompleted(Entity entity, EntityManager em)
+        {
+            if (em.HasComponent<TweenRuntime<float>>(entity))
+            {
+                var runtime = em.GetComponentData<TweenRuntime<float>>(entity);
+                runtime.Completed = false;
+                em.SetComponentData(entity, runtime);
+            }
+            else if (em.HasComponent<TweenRuntime<float2>>(entity))
+            {
+                var runtime = em.GetComponentData<TweenRuntime<float2>>(entity);
+                runtime.Completed = false;
+                em.SetComponentData(entity, runtime);
+            }
+            else if (em.HasComponent<TweenRuntime<float3>>(entity))
+            {
+                var runtime = em.GetComponentData<TweenRuntime<float3>>(entity);
+                runtime.Completed = false;
+                em.SetComponentData(entity, runtime);
+            }
+            else if (em.HasComponent<TweenRuntime<quaternion>>(entity))
+            {
+                var runtime = em.GetComponentData<TweenRuntime<quaternion>>(entity);
+                runtime.Completed = false;
+                em.SetComponentData(entity, runtime);
             }
         }
 
@@ -257,20 +299,10 @@ namespace XO.Entityween
             if (typeof(T) == typeof(float))
             {
                 float val = (float)(object)endValue;
-                if (TweenManagedRegistry.TryGetMember<float>(em.World, ghost, out var hook))
+                if (em.HasComponent<TweenTransformTarget>(ghost))
                 {
-                    hook.Setter(hook.Target, val);
-                }
-                if (TweenManagedRegistry.TryGetCallback<float>(em.World, ghost, out var cb))
-                {
-                    if (cb.StateCallback != null) cb.StateCallback(cb.State, val);
-                    else cb.Callback?.Invoke(val);
-                }
-                if (em.HasComponent<TweenGameObjectTarget>(ghost) && TweenManagedRegistry.TryGetGameObject(em.World, ghost, out var go) && go != null)
-                {
-                    var targetData = em.GetComponentData<TweenGameObjectTarget>(ghost);
-                    if (targetData.Binding == TweenGameObjectBinding.Scale)
-                        go.localScale = Vector3.one * val;
+                    var targetData = em.GetComponentData<TweenTransformTarget>(ghost);
+                    ApplyImmediateToTransform(ghost, val, targetData, em);
                 }
                 if (em.HasComponent<TweenTarget>(ghost))
                 {
@@ -287,27 +319,10 @@ namespace XO.Entityween
             else if (typeof(T) == typeof(float3))
             {
                 float3 val = (float3)(object)endValue;
-                if (TweenManagedRegistry.TryGetMember<float3>(em.World, ghost, out var hook))
+                if (em.HasComponent<TweenTransformTarget>(ghost))
                 {
-                    hook.Setter(hook.Target, val);
-                }
-                if (TweenManagedRegistry.TryGetCallback<float3>(em.World, ghost, out var cb))
-                {
-                    if (cb.StateCallback != null) cb.StateCallback(cb.State, val);
-                    else cb.Callback?.Invoke(val);
-                }
-                if (em.HasComponent<TweenGameObjectTarget>(ghost) && TweenManagedRegistry.TryGetGameObject(em.World, ghost, out var go) && go != null)
-                {
-                    var targetData = em.GetComponentData<TweenGameObjectTarget>(ghost);
-                    if (targetData.Binding == TweenGameObjectBinding.Position)
-                    {
-                        if (targetData.Space == TweenSpace.World) go.position = val;
-                        else go.localPosition = val;
-                    }
-                    else if (targetData.Binding == TweenGameObjectBinding.Scale)
-                    {
-                        go.localScale = val;
-                    }
+                    var targetData = em.GetComponentData<TweenTransformTarget>(ghost);
+                    ApplyImmediateToTransform(ghost, val, targetData, em);
                 }
                 if (em.HasComponent<TweenTarget>(ghost))
                 {
@@ -341,23 +356,10 @@ namespace XO.Entityween
             else if (typeof(T) == typeof(quaternion))
             {
                 quaternion val = (quaternion)(object)endValue;
-                if (TweenManagedRegistry.TryGetMember<quaternion>(em.World, ghost, out var hook))
+                if (em.HasComponent<TweenTransformTarget>(ghost))
                 {
-                    hook.Setter(hook.Target, val);
-                }
-                if (TweenManagedRegistry.TryGetCallback<quaternion>(em.World, ghost, out var cb))
-                {
-                    if (cb.StateCallback != null) cb.StateCallback(cb.State, val);
-                    else cb.Callback?.Invoke(val);
-                }
-                if (em.HasComponent<TweenGameObjectTarget>(ghost) && TweenManagedRegistry.TryGetGameObject(em.World, ghost, out var go) && go != null)
-                {
-                    var targetData = em.GetComponentData<TweenGameObjectTarget>(ghost);
-                    if (targetData.Binding == TweenGameObjectBinding.Rotation)
-                    {
-                        if (targetData.Space == TweenSpace.World) go.rotation = val;
-                        else go.localRotation = val;
-                    }
+                    var targetData = em.GetComponentData<TweenTransformTarget>(ghost);
+                    ApplyImmediateToTransform(ghost, val, targetData, em);
                 }
                 if (em.HasComponent<TweenTarget>(ghost))
                 {
@@ -384,6 +386,40 @@ namespace XO.Entityween
             }
 
             CleanupTargetChase(ghost, em);
+        }
+
+        private static void ApplyImmediateToTransform<T>(Entity ghost, T value, TweenTransformTarget target, EntityManager em)
+            where T : unmanaged
+        {
+            if (!em.HasComponent<TweenTransformReference>(ghost))
+                return;
+
+            var transform = em.GetComponentObject<TweenTransformReference>(ghost).Transform;
+            if (transform == null)
+                return;
+
+            if (typeof(T) == typeof(float))
+            {
+                transform.localScale = Vector3.one * (float)(object)value;
+            }
+            else if (typeof(T) == typeof(float3))
+            {
+                var v = (float3)(object)value;
+                if (target.Binding == TweenTransformBinding.Scale)
+                    transform.localScale = v;
+                else if (target.Space == TweenSpace.World)
+                    transform.position = v;
+                else
+                    transform.localPosition = v;
+            }
+            else if (typeof(T) == typeof(quaternion))
+            {
+                var q = (quaternion)(object)value;
+                if (target.Space == TweenSpace.World)
+                    transform.rotation = q;
+                else
+                    transform.localRotation = q;
+            }
         }
 
         private static void CleanupTargetChase(Entity ghost, EntityManager em)

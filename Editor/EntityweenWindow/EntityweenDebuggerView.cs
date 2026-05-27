@@ -921,7 +921,7 @@ namespace XO.Entityween.Editor
                 float t = progress.NormalizedTime;
                 view.ProgressFill.style.width = Length.Percent(t * 100f);
                 view.ProgressPercentLabel.text = $"{(t * 100f):F0}%";
-                view.ProgressTimeLabel.text    = $"{Mathf.Max(0f, control.ElapsedTime):F1}s / {control.SecondsToPlay:F1}s";
+                view.ProgressTimeLabel.text    = $"{Mathf.Max(0f, progress.ElapsedTime):F1}s / {control.SecondsToPlay:F1}s";
 
                 string startVal, endVal, curVal;
                 string typeName = FormatTweenValues(view.GhostEntity, out startVal, out endVal, out curVal);
@@ -932,34 +932,38 @@ namespace XO.Entityween.Editor
         private string FormatTweenValues(Entity ghost, out string startStr, out string endStr, out string curStr)
         {
             startStr = ""; endStr = ""; curStr = "";
-            if (_em.HasComponent<TweenValue<float>>(ghost))
+            if (_em.HasComponent<TweenRange<float>>(ghost) && _em.HasComponent<TweenRuntime<float>>(ghost))
             {
-                var v = _em.GetComponentData<TweenValue<float>>(ghost);
-                startStr = $"{v.StartPoint:F2}"; endStr = $"{v.EndPoint:F2}"; curStr = $"{v.CurrentValue:F2}";
+                var range = _em.GetComponentData<TweenRange<float>>(ghost);
+                var runtime = _em.GetComponentData<TweenRuntime<float>>(ghost);
+                startStr = $"{range.StartPoint:F2}"; endStr = $"{range.EndPoint:F2}"; curStr = $"{runtime.CurrentValue:F2}";
                 return "Float";
             }
-            if (_em.HasComponent<TweenValue<float2>>(ghost))
+            if (_em.HasComponent<TweenRange<float2>>(ghost) && _em.HasComponent<TweenRuntime<float2>>(ghost))
             {
-                var v = _em.GetComponentData<TweenValue<float2>>(ghost);
-                startStr = $"({v.StartPoint.x:F2}, {v.StartPoint.y:F2})";
-                endStr   = $"({v.EndPoint.x:F2}, {v.EndPoint.y:F2})";
-                curStr   = $"({v.CurrentValue.x:F2}, {v.CurrentValue.y:F2})";
+                var range = _em.GetComponentData<TweenRange<float2>>(ghost);
+                var runtime = _em.GetComponentData<TweenRuntime<float2>>(ghost);
+                startStr = $"({range.StartPoint.x:F2}, {range.StartPoint.y:F2})";
+                endStr   = $"({range.EndPoint.x:F2}, {range.EndPoint.y:F2})";
+                curStr   = $"({runtime.CurrentValue.x:F2}, {runtime.CurrentValue.y:F2})";
                 return "Float2";
             }
-            if (_em.HasComponent<TweenValue<float3>>(ghost))
+            if (_em.HasComponent<TweenRange<float3>>(ghost) && _em.HasComponent<TweenRuntime<float3>>(ghost))
             {
-                var v = _em.GetComponentData<TweenValue<float3>>(ghost);
-                startStr = $"({v.StartPoint.x:F2}, {v.StartPoint.y:F2}, {v.StartPoint.z:F2})";
-                endStr   = $"({v.EndPoint.x:F2}, {v.EndPoint.y:F2}, {v.EndPoint.z:F2})";
-                curStr   = $"({v.CurrentValue.x:F2}, {v.CurrentValue.y:F2}, {v.CurrentValue.z:F2})";
+                var range = _em.GetComponentData<TweenRange<float3>>(ghost);
+                var runtime = _em.GetComponentData<TweenRuntime<float3>>(ghost);
+                startStr = $"({range.StartPoint.x:F2}, {range.StartPoint.y:F2}, {range.StartPoint.z:F2})";
+                endStr   = $"({range.EndPoint.x:F2}, {range.EndPoint.y:F2}, {range.EndPoint.z:F2})";
+                curStr   = $"({runtime.CurrentValue.x:F2}, {runtime.CurrentValue.y:F2}, {runtime.CurrentValue.z:F2})";
                 return "Float3";
             }
-            if (_em.HasComponent<TweenValue<quaternion>>(ghost))
+            if (_em.HasComponent<TweenRange<quaternion>>(ghost) && _em.HasComponent<TweenRuntime<quaternion>>(ghost))
             {
-                var v = _em.GetComponentData<TweenValue<quaternion>>(ghost);
-                startStr = $"({v.StartPoint.value.x:F2}, {v.StartPoint.value.y:F2}, {v.StartPoint.value.z:F2}, {v.StartPoint.value.w:F2})";
-                endStr   = $"({v.EndPoint.value.x:F2}, {v.EndPoint.value.y:F2}, {v.EndPoint.value.z:F2}, {v.EndPoint.value.w:F2})";
-                curStr   = $"({v.CurrentValue.value.x:F2}, {v.CurrentValue.value.y:F2}, {v.CurrentValue.value.z:F2}, {v.CurrentValue.value.w:F2})";
+                var range = _em.GetComponentData<TweenRange<quaternion>>(ghost);
+                var runtime = _em.GetComponentData<TweenRuntime<quaternion>>(ghost);
+                startStr = $"({range.StartPoint.value.x:F2}, {range.StartPoint.value.y:F2}, {range.StartPoint.value.z:F2}, {range.StartPoint.value.w:F2})";
+                endStr   = $"({range.EndPoint.value.x:F2}, {range.EndPoint.value.y:F2}, {range.EndPoint.value.z:F2}, {range.EndPoint.value.w:F2})";
+                curStr   = $"({runtime.CurrentValue.value.x:F2}, {runtime.CurrentValue.value.y:F2}, {runtime.CurrentValue.value.z:F2}, {runtime.CurrentValue.value.w:F2})";
                 return "Quat";
             }
             return "Unknown";

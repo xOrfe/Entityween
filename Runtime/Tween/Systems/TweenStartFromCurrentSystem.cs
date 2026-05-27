@@ -26,39 +26,42 @@ namespace XO.Entityween
             var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
                 .CreateCommandBuffer(state.WorldUnmanaged);
 
-            foreach (var (value, current, entity) in SystemAPI.Query<RefRW<TweenValue<float3>>, RefRO<TweenStartFromCurrent>>().WithNone<TweenSequenceDriven>().WithEntityAccess())
+            foreach (var (range, runtime, current, entity) in SystemAPI.Query<RefRW<TweenRange<float3>>, RefRW<TweenRuntime<float3>>, RefRO<TweenStartFromCurrent>>().WithNone<TweenSequenceDriven>().WithEntityAccess())
             {
-                if (!TryGetFloat3(current.ValueRO, localTransformLookup, localToWorldLookup, out var start)) continue;
+                var currentValue = current.ValueRO;
+                if (!TryGetFloat3(in currentValue, ref localTransformLookup, ref localToWorldLookup, out var start)) continue;
 
-                value.ValueRW.StartPoint = start;
-                value.ValueRW.CurrentValue = start;
+                range.ValueRW.StartPoint = start;
+                runtime.ValueRW.CurrentValue = start;
                 ecb.RemoveComponent<TweenStartFromCurrent>(entity);
             }
 
-            foreach (var (value, current, entity) in SystemAPI.Query<RefRW<TweenValue<quaternion>>, RefRO<TweenStartFromCurrent>>().WithNone<TweenSequenceDriven>().WithEntityAccess())
+            foreach (var (range, runtime, current, entity) in SystemAPI.Query<RefRW<TweenRange<quaternion>>, RefRW<TweenRuntime<quaternion>>, RefRO<TweenStartFromCurrent>>().WithNone<TweenSequenceDriven>().WithEntityAccess())
             {
-                if (!TryGetQuaternion(current.ValueRO, localTransformLookup, localToWorldLookup, out var start)) continue;
+                var currentValue = current.ValueRO;
+                if (!TryGetQuaternion(in currentValue, ref localTransformLookup, ref localToWorldLookup, out var start)) continue;
 
-                value.ValueRW.StartPoint = start;
-                value.ValueRW.CurrentValue = start;
+                range.ValueRW.StartPoint = start;
+                runtime.ValueRW.CurrentValue = start;
                 ecb.RemoveComponent<TweenStartFromCurrent>(entity);
             }
 
-            foreach (var (value, current, entity) in SystemAPI.Query<RefRW<TweenValue<float>>, RefRO<TweenStartFromCurrent>>().WithNone<TweenSequenceDriven>().WithEntityAccess())
+            foreach (var (range, runtime, current, entity) in SystemAPI.Query<RefRW<TweenRange<float>>, RefRW<TweenRuntime<float>>, RefRO<TweenStartFromCurrent>>().WithNone<TweenSequenceDriven>().WithEntityAccess())
             {
                 if (current.ValueRO.TweenType != TweenType.ScaleToUniform ||
                     !localTransformLookup.TryGetComponent(current.ValueRO.TargetEntity, out var transform))
                     continue;
 
-                value.ValueRW.StartPoint = transform.Scale;
-                value.ValueRW.CurrentValue = transform.Scale;
+                range.ValueRW.StartPoint = transform.Scale;
+                runtime.ValueRW.CurrentValue = transform.Scale;
                 ecb.RemoveComponent<TweenStartFromCurrent>(entity);
             }
         }
 
-        private static bool TryGetFloat3(TweenStartFromCurrent current,
-            ComponentLookup<LocalTransform> localTransformLookup,
-            ComponentLookup<LocalToWorld> localToWorldLookup,
+        [BurstCompile(DisableDirectCall = true)]
+        private static bool TryGetFloat3(in TweenStartFromCurrent current,
+            ref ComponentLookup<LocalTransform> localTransformLookup,
+            ref ComponentLookup<LocalToWorld> localToWorldLookup,
             out float3 value)
         {
             value = default;
@@ -82,9 +85,10 @@ namespace XO.Entityween
             return false;
         }
 
-        private static bool TryGetQuaternion(TweenStartFromCurrent current,
-            ComponentLookup<LocalTransform> localTransformLookup,
-            ComponentLookup<LocalToWorld> localToWorldLookup,
+        [BurstCompile(DisableDirectCall = true)]
+        private static bool TryGetQuaternion(in TweenStartFromCurrent current,
+            ref ComponentLookup<LocalTransform> localTransformLookup,
+            ref ComponentLookup<LocalToWorld> localToWorldLookup,
             out quaternion value)
         {
             value = default;

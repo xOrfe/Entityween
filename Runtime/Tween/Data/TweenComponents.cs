@@ -6,17 +6,20 @@ namespace XO.Entityween
 
     internal struct TweenControl : IComponentData, IEnableableComponent
     {
-        public float ElapsedTime;
         public float SecondsToPlay;
         public EaseType EaseType;
         public bool AutoKill;
-        public bool Completed;
     }
 
-    internal struct TweenValue<T> : IComponentData where T : unmanaged
+    internal struct TweenRange<T> : IComponentData where T : unmanaged
     {
         public T StartPoint;
         public T EndPoint;
+    }
+
+    internal struct TweenRuntime<T> : IComponentData where T : unmanaged
+    {
+        public bool Completed;
         public T CurrentValue;
     }
 

@@ -6,9 +6,11 @@ namespace XO.Entityween
     public interface IEntityCommandAdapter
     {
         World World { get; }
+        bool SupportsManagedComponents { get; }
         Entity CreateEntity();
         Entity CreateTweenEntity<T>() where T : unmanaged;
         void AddComponent<T>(Entity e, T component) where T : unmanaged, IComponentData;
+        void AddComponentObject<T>(Entity e, T component) where T : class, IComponentData;
         void SetComponent<T>(Entity e, T component) where T : unmanaged, IComponentData;
         void RemoveComponent<T>(Entity e) where T : unmanaged, IComponentData;
         void SetComponentEnabled<T>(Entity e, bool enabled) where T : unmanaged, IEnableableComponent, IComponentData;
@@ -23,6 +25,7 @@ namespace XO.Entityween
         public EntityManager Em;
 
         public World World => Em.World;
+        public bool SupportsManagedComponents => true;
 
         public Entity CreateEntity() => Em.CreateEntity();
 
@@ -32,7 +35,8 @@ namespace XO.Entityween
                 typeof(TweenControl),
                 typeof(PlaybackProgress),
                 typeof(TweenTarget),
-                typeof(TweenValue<T>)
+                typeof(TweenRange<T>),
+                typeof(TweenRuntime<T>)
             );
         }
 
@@ -40,6 +44,11 @@ namespace XO.Entityween
         {
             if (Em.HasComponent<T>(e)) Em.SetComponentData(e, component);
             else Em.AddComponentData(e, component);
+        }
+        public void AddComponentObject<T>(Entity e, T component) where T : class, IComponentData
+        {
+            if (Em.HasComponent<T>(e)) Em.RemoveComponent<T>(e);
+            Em.AddComponentObject(e, component);
         }
         public void SetComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => Em.SetComponentData(e, component);
         public void RemoveComponent<T>(Entity e) where T : unmanaged, IComponentData => Em.RemoveComponent<T>(e);
@@ -56,6 +65,7 @@ namespace XO.Entityween
         public World TargetWorld;
 
         public World World => TargetWorld ?? World.DefaultGameObjectInjectionWorld;
+        public bool SupportsManagedComponents => false;
 
         public Entity CreateEntity() => ECB.CreateEntity();
 
@@ -65,11 +75,13 @@ namespace XO.Entityween
             ECB.AddComponent<TweenControl>(e);
             ECB.AddComponent<PlaybackProgress>(e);
             ECB.AddComponent<TweenTarget>(e);
-            ECB.AddComponent<TweenValue<T>>(e);
+            ECB.AddComponent<TweenRange<T>>(e);
+            ECB.AddComponent<TweenRuntime<T>>(e);
             return e;
         }
 
         public void AddComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => ECB.AddComponent(e, component);
+        public void AddComponentObject<T>(Entity e, T component) where T : class, IComponentData => Debug.LogError("Cannot add managed component from EntityCommandBuffer.");
         public void SetComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => ECB.SetComponent(e, component);
         public void RemoveComponent<T>(Entity e) where T : unmanaged, IComponentData => ECB.RemoveComponent<T>(e);
         public void SetComponentEnabled<T>(Entity e, bool enabled) where T : unmanaged, IEnableableComponent, IComponentData => ECB.SetComponentEnabled<T>(e, enabled);
@@ -85,6 +97,7 @@ namespace XO.Entityween
         public EntityCommandBuffer.ParallelWriter ECB;
 
         public World World => null;
+        public bool SupportsManagedComponents => false;
 
         public Entity CreateEntity() => ECB.CreateEntity(SortKey);
 
@@ -94,11 +107,13 @@ namespace XO.Entityween
             ECB.AddComponent<TweenControl>(SortKey, e);
             ECB.AddComponent<PlaybackProgress>(SortKey, e);
             ECB.AddComponent<TweenTarget>(SortKey, e);
-            ECB.AddComponent<TweenValue<T>>(SortKey, e);
+            ECB.AddComponent<TweenRange<T>>(SortKey, e);
+            ECB.AddComponent<TweenRuntime<T>>(SortKey, e);
             return e;
         }
 
         public void AddComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => ECB.AddComponent(SortKey, e, component);
+        public void AddComponentObject<T>(Entity e, T component) where T : class, IComponentData => Debug.LogError("Cannot add managed component from ParallelWriter.");
         public void SetComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => ECB.SetComponent(SortKey, e, component);
         public void RemoveComponent<T>(Entity e) where T : unmanaged, IComponentData => ECB.RemoveComponent<T>(SortKey, e);
         public void SetComponentEnabled<T>(Entity e, bool enabled) where T : unmanaged, IEnableableComponent, IComponentData => ECB.SetComponentEnabled<T>(SortKey, e, enabled);
@@ -113,6 +128,7 @@ namespace XO.Entityween
         public Baker<TAuth> Baker;
 
         public World World => null;
+        public bool SupportsManagedComponents => false;
 
         public Entity CreateEntity() => Baker.CreateAdditionalEntity(TransformUsageFlags.Dynamic);
 
@@ -122,11 +138,13 @@ namespace XO.Entityween
             Baker.AddComponent<TweenControl>(e);
             Baker.AddComponent<PlaybackProgress>(e);
             Baker.AddComponent<TweenTarget>(e);
-            Baker.AddComponent<TweenValue<T>>(e);
+            Baker.AddComponent<TweenRange<T>>(e);
+            Baker.AddComponent<TweenRuntime<T>>(e);
             return e;
         }
 
         public void AddComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => Baker.AddComponent(e, component);
+        public void AddComponentObject<T>(Entity e, T component) where T : class, IComponentData => Debug.LogError("Cannot add managed component from Baker.");
         public void SetComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => Baker.SetComponent(e, component);
         public void RemoveComponent<T>(Entity e) where T : unmanaged, IComponentData => Debug.LogError("Cannot remove component from Baker.");
         public void SetComponentEnabled<T>(Entity e, bool enabled) where T : unmanaged, IEnableableComponent, IComponentData => Baker.SetComponentEnabled<T>(e, enabled);

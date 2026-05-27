@@ -497,14 +497,14 @@ namespace XO.Entityween.Tests
             var group = world.GetOrCreateSystemManaged<EntityweenTweenGroup>();
             group.AddSystemToUpdateList(system);
 
-            var control = em.GetComponentData<TweenControl>(ghost);
-            control.ElapsedTime = 1.5f;
-            em.SetComponentData(ghost, control);
+            var progress = em.GetComponentData<PlaybackProgress>(ghost);
+            progress.ElapsedTime = 1.5f;
+            em.SetComponentData(ghost, progress);
 
             ecbSystem.Update();
             group.Update();
 
-            var value = em.GetComponentData<TweenValue<float>>(ghost);
+            var value = em.GetComponentData<TweenRuntime<float>>(ghost);
             Assert.AreEqual(2.5f, value.CurrentValue, 0.0001f);
         }
 
@@ -524,14 +524,14 @@ namespace XO.Entityween.Tests
             var group = world.GetOrCreateSystemManaged<EntityweenTweenGroup>();
             group.AddSystemToUpdateList(system);
 
-            var control = em.GetComponentData<TweenControl>(ghost);
-            control.ElapsedTime = 1.5f;
-            em.SetComponentData(ghost, control);
+            var progress = em.GetComponentData<PlaybackProgress>(ghost);
+            progress.ElapsedTime = 1.5f;
+            em.SetComponentData(ghost, progress);
 
             ecbSystem.Update();
             group.Update();
 
-            var value = em.GetComponentData<TweenValue<float>>(ghost);
+            var value = em.GetComponentData<TweenRuntime<float>>(ghost);
             Assert.AreEqual(7.5f, value.CurrentValue, 0.0001f);
         }
 
@@ -564,14 +564,14 @@ namespace XO.Entityween.Tests
             var group = world.GetOrCreateSystemManaged<EntityweenTweenGroup>();
             group.AddSystemToUpdateList(system);
 
-            var control = em.GetComponentData<TweenControl>(ghost);
-            control.ElapsedTime = 0.5f;
-            em.SetComponentData(ghost, control);
+            var progress = em.GetComponentData<PlaybackProgress>(ghost);
+            progress.ElapsedTime = 0.5f;
+            em.SetComponentData(ghost, progress);
 
             ecbSystem.Update();
             group.Update();
 
-            var value = em.GetComponentData<TweenValue<float3>>(ghost);
+            var value = em.GetComponentData<TweenRuntime<float3>>(ghost);
             Assert.AreNotEqual(float3.zero, value.CurrentValue);
 
             Assert.IsTrue(blob.IsCreated);
@@ -730,13 +730,45 @@ namespace XO.Entityween.Tests
 
             var ghost = target.MoveTo(new float3(10f, 0f, 0f), 1f).Play(em);
 
-            var control = em.GetComponentData<TweenControl>(ghost);
-            control.ElapsedTime = 0.5f;
-            em.SetComponentData(ghost, control);
+            var progress = em.GetComponentData<PlaybackProgress>(ghost);
+            progress.ElapsedTime = 0.5f;
+            em.SetComponentData(ghost, progress);
 
             Entityween.Rewind(ghost, em);
-            var progress = em.GetComponentData<PlaybackProgress>(ghost);
+            progress = em.GetComponentData<PlaybackProgress>(ghost);
             Assert.AreEqual(-1, progress.Direction);
+        }
+
+        [Test]
+        public void TweenTargetCleanup_DestroysTweenGhostWhenTargetEntityIsDestroyed()
+        {
+            using var world = new World("Target Cleanup Test");
+            var em = world.EntityManager;
+            var target = em.CreateEntity();
+            em.AddComponentData(target, new LocalTransform { Position = float3.zero, Scale = 1f, Rotation = quaternion.identity });
+
+            var ghost = target.MoveTo(new float3(10f, 0f, 0f), 1f)
+                .Loop(LoopType.PingPong)
+                .Play(em);
+
+            Assert.IsTrue(em.Exists(ghost));
+
+            // Now destroy target entity
+            em.DestroyEntity(target);
+
+            // Update systems
+            var ecbSystem = world.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
+            var cleanupSystem = world.CreateSystem<TweenTargetCleanupSystem>();
+            var group = world.GetOrCreateSystemManaged<EntityweenTweenGroup>();
+            group.AddSystemToUpdateList(cleanupSystem);
+
+            for (int i = 0; i < 60; i++)
+            {
+                group.Update();
+                ecbSystem.Update();
+            }
+
+            Assert.IsFalse(em.Exists(ghost));
         }
     }
 
