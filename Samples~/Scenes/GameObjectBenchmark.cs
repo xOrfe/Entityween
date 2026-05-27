@@ -17,8 +17,8 @@ namespace Entityween.Samples
             Mixed
         }
 
-        private static readonly int[] SpawnCounts = { 500, 1000, 5000, 10000 };
-        private static readonly string[] SpawnLabels = { "500", "1k", "5k", "10k" };
+        private static readonly int[] SpawnCounts = { 1000, 5000, 10000, 50000 };
+        private static readonly string[] SpawnLabels = { "1k", "5k", "10k", "50k" };
         private static readonly BenchmarkTweenType[] TweenTypes =
         {
             BenchmarkTweenType.Move,
@@ -195,11 +195,13 @@ namespace Entityween.Samples
                     UnityEngine.Random.Range(-range.z, range.z)
                 );
 
-                var go = Instantiate(prefab, startPos, Quaternion.identity, transform);
+                var go = Instantiate(prefab);
+                float3 worldStartPos = (float3)transform.position + startPos;
+                go.transform.SetPositionAndRotation(worldStartPos, Quaternion.identity);
                 spawnedObjects.Add(go);
 
                 float duration = UnityEngine.Random.Range(1.5f, 4.0f);
-                Entity tweenEntity = PlayBenchmarkTween(em, go.transform, startPos, duration, PickTweenType());
+                Entity tweenEntity = PlayBenchmarkTween(em, go.transform, worldStartPos, duration, PickTweenType());
                 if (tweenEntity != Entity.Null)
                 {
                     tweenEntities.Add(tweenEntity);
