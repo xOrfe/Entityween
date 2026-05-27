@@ -36,26 +36,20 @@ Or add it to `Packages/manifest.json`:
 ## Quick Start
 
 ```csharp
+gameObject
+    .MoveTo(new float3(0f, 3f, 0f), 1.0f)
+    .Ease(EaseType.OutCubic)
+    .Play();
+
 entity
     .MoveToWorld(new float3(0f, 3f, 0f), 1.0f)
     .Ease(EaseType.OutCubic)
     .Play(ecb);
 ```
 
-By default, transform tweens start from the entity's current transform. Use
-`.From(value)` when you want an explicit start value.
-
-```csharp
-entity
-    .ScaleTo(new float3(2f), 0.6f)
-    .From(new float3(1f))
-    .Loop(LoopType.PingPong)
-    .Play(ecb);
-```
-
 ## Tween API
 
-### Entity Tweens
+### Tweens for GameObjects and Entities
 
 | Method | Value | Writes to |
 |:---|:---|:---|
@@ -74,35 +68,28 @@ entity
 
 ### Tween Modifiers
 
-| Method | Use |
-|:---|:---|
-| `.From(start)` | Set an explicit start value. |
-| `.FromCurrent()` | Read the current value when playback starts. |
-| `.To(target)` | Replace the destination value. |
-| `.Ease(easeType)` | Apply an `EaseType`. |
-| `.Loop(type, count, easeMode)` | Repeat or ping-pong. `count: 0` means infinite. |
-| `.TimeType(timeType)` | Use `Scaled`, `Unscaled`, or `Fixed` time. |
+| Method                                 | Use |
+|:---------------------------------------|:---|
+| `.From(start)`                         | Set an explicit start value. |
+| `.FromCurrent()`                       | Read the current value when playback starts. |
+| `.To(target)`                          | Replace the destination value. |
+| `.Ease(easeType)`                      | Apply an `EaseType`. |
+| `.Loop(type, count, easeMode)`         | Repeat or ping-pong. `count: 0` means infinite. |
+| `.TimeType(timeType)`                  | Use `Scaled`, `Unscaled`, or `Fixed` time. |
 | `.Along(points, splineType, isClosed)` | Follow a `NativeArray<T>` spline. |
-| `.Along(blob)` | Follow a `SplineBlob<T>`. |
-| `.Bend(blob)` | Bend the start-to-end tween line by a spline blob. |
-| `.Chase(...)` | Settle the final value with chase behavior. |
-| `.BindTransform(transform)` | Write values to a GameObject transform. |
+| `.Along(blob)`                         | Follow a `SplineBlob<T>`. |
+| `.Bend(blob)`                          | Bend the start-to-end tween line by a spline blob. |
+| `.Chase(smoothingValue, chaseMode)`    | Settle the final value with chase behavior. |
+| `.BindTransform(transform)`            | Write values to a `Transform` or `GameObject` target. |
 
-## GameObject Tweens
-
-GameObjects use the same builder style, but playback must run on a world because
-their transforms are registered into a `TransformAccessArray` and written by a
-Burst-compiled transform job.
+You can make an entity chase the tweened value to give the motion more weight.
 
 ```csharp
-transform
-    .MoveTo(new float3(0f, 2f, 0f), 0.5f)
-    .Ease(EaseType.OutQuad)
-    .Play(world.EntityManager);
+entity
+    .MoveToWorld(new float3(0f, 3f, 0f), 1.0f)
+    .Chase(0.15f, ChaseMode.SmoothStep)
+    .Play(ecb);
 ```
-
-GameObject transform bindings are transform-only. Arbitrary managed member
-setters and update callbacks are intentionally not part of the runtime path.
 
 ## Chase API
 
@@ -210,14 +197,19 @@ tween.Play(ecb);
 tween.Play(sortKey, ref parallelWriter);
 tween.Play(entityManager);
 tween.Play(baker);
+tween.Play(); // Uses World.DefaultGameObjectInjectionWorld.
 ```
+
+Transform and GameObject tweens require `Play(entityManager)` or `Play()` so the
+managed transform reference can be attached to the tween entity. They are not
+supported from an `EntityCommandBuffer`, parallel writer, or Baker.
 
 ## Notes
 
 - `LoopType.Random` currently falls back to `Repeat`.
 - `TimeType.Fixed` is the default.
-- Managed field bindings may allocate because reflection boxes field values.
-- When using IL2CPP stripping, preserve members that are only referenced by name.
+- Transform and GameObject tweens are transform-only; member-name bindings and
+  per-frame managed update callbacks are not part of the runtime API.
 
 ## License
 
