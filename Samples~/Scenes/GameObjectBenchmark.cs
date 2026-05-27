@@ -196,6 +196,15 @@ namespace Entityween.Samples
                 );
 
                 var go = Instantiate(prefab);
+                if (go.TryGetComponent<Collider>(out var col))
+                {
+                    Destroy(col);
+                }
+                if (go.TryGetComponent<Renderer>(out var ren))
+                {
+                    ren.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    ren.receiveShadows = false;
+                }
                 float3 worldStartPos = (float3)transform.position + startPos;
                 go.transform.SetPositionAndRotation(worldStartPos, Quaternion.identity);
                 spawnedObjects.Add(go);

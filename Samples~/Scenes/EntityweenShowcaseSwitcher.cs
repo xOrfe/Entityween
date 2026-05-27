@@ -168,14 +168,31 @@ namespace Entityween.Samples
             {
                 case SceneMode.Showcase:
                     mainCamera.transform.SetPositionAndRotation(new Vector3(0f, 18f, -42f), Quaternion.Euler(25f, 0f, 0f));
+                    mainCamera.farClipPlane = 1000f;
+                    SetShadowsEnabled(mainCamera, true);
                     break;
                 case SceneMode.EaseGallery:
                     mainCamera.transform.SetPositionAndRotation(new Vector3(0f, 23f, -55f), Quaternion.Euler(25f, 0f, 0f));
+                    mainCamera.farClipPlane = 1000f;
+                    SetShadowsEnabled(mainCamera, true);
                     break;
                 case SceneMode.Benchmark:
                     mainCamera.transform.SetPositionAndRotation(new Vector3(0f, 40f, -120f), Quaternion.Euler(20f, 0f, 0f));
+                    mainCamera.farClipPlane = 300f;
+                    SetShadowsEnabled(mainCamera, false);
                     break;
             }
+        }
+
+        private static void SetShadowsEnabled(Camera camera, bool enabled)
+        {
+#if UNITY_2019_3_OR_NEWER
+            var cameraData = camera.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+            if (cameraData != null)
+            {
+                cameraData.renderShadows = enabled;
+            }
+#endif
         }
 
         private static void SetGameObjectActive(GameObject go, bool active)

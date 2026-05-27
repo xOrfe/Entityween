@@ -231,6 +231,7 @@ namespace Entityween.Samples
             material.SetColor("_Color", color);
             material.EnableKeyword("_EMISSION");
             material.SetColor("_EmissionColor", color * 1.4f);
+            material.enableInstancing = true;
             return material;
         }
 

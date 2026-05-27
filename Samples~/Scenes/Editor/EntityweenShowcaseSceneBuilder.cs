@@ -138,12 +138,14 @@ namespace Entityween.Editor
                 mat = new Material(shader);
                 mat.SetColor("_BaseColor", color);
                 mat.SetColor("_Color", color);
+                mat.enableInstancing = true;
                 AssetDatabase.CreateAsset(mat, path);
             }
             else
             {
                 mat.SetColor("_BaseColor", color);
                 mat.SetColor("_Color", color);
+                mat.enableInstancing = true;
                 EditorUtility.SetDirty(mat);
             }
             return mat;
@@ -338,9 +340,18 @@ namespace Entityween.Editor
             string prefabPath = $"{prefabFolder}/BenchmarkCube.prefab";
             GameObject tempCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
             tempCube.name = "BenchmarkCube";
+            if (tempCube.TryGetComponent<Collider>(out var col))
+            {
+                GameObject.DestroyImmediate(col);
+            }
             var cubeMat = GetOrCreateMaterial(matFolder, "BenchmarkCyan", new Color(0f, 0.7f, 0.9f));
             var cubeRenderer = tempCube.GetComponent<Renderer>();
-            if (cubeRenderer != null) cubeRenderer.sharedMaterial = cubeMat;
+            if (cubeRenderer != null)
+            {
+                cubeRenderer.sharedMaterial = cubeMat;
+                cubeRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                cubeRenderer.receiveShadows = false;
+            }
             PrefabUtility.SaveAsPrefabAsset(tempCube, prefabPath);
             GameObject.DestroyImmediate(tempCube);
 
@@ -517,9 +528,18 @@ namespace Entityween.Editor
             {
                 GameObject tempCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 tempCube.name = "BenchmarkCube";
+                if (tempCube.TryGetComponent<Collider>(out var col))
+                {
+                    GameObject.DestroyImmediate(col);
+                }
                 var cubeMat = GetOrCreateMaterial(matFolder, "BenchmarkCyan", new Color(0f, 0.7f, 0.9f));
                 var cubeRenderer = tempCube.GetComponent<Renderer>();
-                if (cubeRenderer != null) cubeRenderer.sharedMaterial = cubeMat;
+                if (cubeRenderer != null)
+                {
+                    cubeRenderer.sharedMaterial = cubeMat;
+                    cubeRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    cubeRenderer.receiveShadows = false;
+                }
                 cubePrefab = PrefabUtility.SaveAsPrefabAsset(tempCube, prefabPath);
                 GameObject.DestroyImmediate(tempCube);
             }
