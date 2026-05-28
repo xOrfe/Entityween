@@ -15,7 +15,7 @@ namespace Entityween.Editor
 {
     public static class EntityweenShowcaseSceneBuilder
     {
-        [MenuItem("XO/Entityween/Generate Showcase Scene", false, 10)]
+        [MenuItem("Tools/Entityween/Generate Showcase Scene", false, 10)]
         public static void GenerateShowcaseScene()
         {
             string version = EntityweenVersionHelper.Version;
@@ -32,7 +32,6 @@ namespace Entityween.Editor
 
             GenerateCombinedShowcaseSceneInternal(outputDir);
             DeleteLegacySceneFiles(outputDir);
-            CopyScenesToPackage(outputDir);
 
             Debug.Log("Successfully generated Entityween combined showcase scene!");
         }
@@ -711,77 +710,6 @@ namespace Entityween.Editor
             }
         }
 
-        private static void CopyDirectory(string sourceDir, string targetDir)
-        {
-            Directory.CreateDirectory(targetDir);
-
-            foreach (var file in Directory.GetFiles(sourceDir))
-            {
-                string dest = Path.Combine(targetDir, Path.GetFileName(file));
-                File.Copy(file, dest, true);
-            }
-
-            foreach (var folder in Directory.GetDirectories(sourceDir))
-            {
-                if (Path.GetFileName(folder) == "Editor") continue;
-                string dest = Path.Combine(targetDir, Path.GetFileName(folder));
-                CopyDirectory(folder, dest);
-            }
-        }
-
-        private static void CopyScenesToPackage(string outputDir)
-        {
-            string pkgDir = "Packages/Entityween/Samples~/Scenes";
-            if (!Directory.Exists(pkgDir)) return;
-
-            try
-            {
-                DeleteLegacySceneFiles(pkgDir);
-
-                string[] scenes = {
-                    "EntityweenShowcase.unity"
-                };
-                foreach (var scene in scenes)
-                {
-                    string srcPath = Path.Combine(outputDir, scene);
-                    string destPath = Path.Combine(pkgDir, scene);
-                    if (File.Exists(srcPath))
-                    {
-                        File.Copy(srcPath, destPath, true);
-                        string srcMeta = srcPath + ".meta";
-                        if (File.Exists(srcMeta)) File.Copy(srcMeta, destPath + ".meta", true);
-                    }
-                }
-
-                string srcSubSceneDir = Path.Combine(outputDir, "SubScenes");
-                string destSubSceneDir = Path.Combine(pkgDir, "SubScenes");
-                if (Directory.Exists(srcSubSceneDir))
-                {
-                    CopyDirectory(srcSubSceneDir, destSubSceneDir);
-                    string srcMeta = srcSubSceneDir + ".meta";
-                    string destMeta = destSubSceneDir + ".meta";
-                    if (File.Exists(srcMeta)) File.Copy(srcMeta, destMeta, true);
-                }
-
-                string srcMatDir = Path.Combine(outputDir, "Materials");
-                string destMatDir = Path.Combine(pkgDir, "Materials");
-                if (Directory.Exists(srcMatDir))
-                {
-                    CopyDirectory(srcMatDir, destMatDir);
-                }
-
-                string srcPrefabDir = Path.Combine(outputDir, "Prefabs");
-                string destPrefabDir = Path.Combine(pkgDir, "Prefabs");
-                if (Directory.Exists(srcPrefabDir))
-                {
-                    CopyDirectory(srcPrefabDir, destPrefabDir);
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning("Failed to copy generated assets back to package: " + ex.Message);
-            }
-        }
 
         private static void DeleteLegacySceneFiles(string sceneFolder)
         {

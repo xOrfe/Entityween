@@ -25,7 +25,7 @@ namespace XO.Entityween.Editor
         private VisualElement _navBtnDebugger;
         private VisualElement _navBtnSettings;
 
-        [MenuItem("XO/Entityween/Open Dashboard", false, 0)]
+        [MenuItem("Tools/Entityween/Open Dashboard", false, 0)]
         public static void OpenWindow()
         {
             var window = GetWindow<EntityweenWindow>("Entityween Unified");

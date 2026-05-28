@@ -13,7 +13,7 @@ namespace XO.Entityween.Editor
         private static string SamplesRoot => "Assets/Samples/" + PackageName;
         private static string SampleScenesDir => $"{SamplesRoot}/{Version}/Scenes";
         private static string MainScenePath => $"{SampleScenesDir}/EntityweenShowcase.unity";
-        private static string PrefKey => "Entityween.ShowcaseGenerated." + Version;
+        private static string PrefKey => $"Entityween.ShowcaseGenerated.{Application.dataPath.GetHashCode()}.{Version}";
 
         static EntityweenSampleImportChecker()
         {
@@ -26,10 +26,17 @@ namespace XO.Entityween.Editor
 
             if (Directory.Exists(SampleScenesDir))
             {
-                if (!EditorPrefs.GetBool(PrefKey, false))
+                if (!EditorPrefs.GetBool(PrefKey, false) && !File.Exists(MainScenePath))
                 {
                     RunShowcaseGeneration();
                     EditorPrefs.SetBool(PrefKey, true);
+                }
+            }
+            else
+            {
+                if (EditorPrefs.GetBool(PrefKey, false))
+                {
+                    EditorPrefs.DeleteKey(PrefKey);
                 }
             }
         }

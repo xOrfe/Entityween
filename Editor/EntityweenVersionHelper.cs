@@ -25,13 +25,18 @@ namespace XO.Entityween.Editor
             var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(EntityweenVersionHelper).Assembly);
             if (packageInfo != null)
             {
-                string readmePath = Path.Combine(packageInfo.resolvedPath, "README.md");
-                if (File.Exists(readmePath))
+                if (!string.IsNullOrEmpty(packageInfo.version))
+                {
+                    return packageInfo.version;
+                }
+
+                string packageJsonPath = Path.Combine(packageInfo.resolvedPath, "package.json");
+                if (File.Exists(packageJsonPath))
                 {
                     try
                     {
-                        string content = File.ReadAllText(readmePath);
-                        var match = Regex.Match(content, @"<!--\s*Version:\s*([0-9]+\.[0-9]+\.[0-9]+)\s*-->");
+                        string content = File.ReadAllText(packageJsonPath);
+                        var match = Regex.Match(content, @"""version""\s*:\s*""([^""]+)""");
                         if (match.Success)
                         {
                             return match.Groups[1].Value.Trim();
@@ -41,14 +46,26 @@ namespace XO.Entityween.Editor
                     {
                     }
                 }
+            }
 
-                if (!string.IsNullOrEmpty(packageInfo.version))
+            string directPath = "Packages/Entityween/package.json";
+            if (File.Exists(directPath))
+            {
+                try
                 {
-                    return packageInfo.version;
+                    string content = File.ReadAllText(directPath);
+                    var match = Regex.Match(content, @"""version""\s*:\s*""([^""]+)""");
+                    if (match.Success)
+                    {
+                        return match.Groups[1].Value.Trim();
+                    }
+                }
+                catch
+                {
                 }
             }
 
-            return "1.1.0";
+            return "1.1.3";
         }
     }
 }
