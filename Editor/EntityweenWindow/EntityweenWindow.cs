@@ -82,7 +82,7 @@ namespace XO.Entityween.Editor
             var logoTitleRow = EntityweenUIStyleUtility.CreateLabelWithIcon("", "ENTITYWEEN", 15, EntityweenUIStyleUtility.AccentBlue);
             logoRow.Add(logoTitleRow);
 
-            string packageVersion = EntityweenVersionHelper.Version;
+            string packageVersion = PackageVersionHelper.Version;
 
             var versionLabel = new Label($"v{packageVersion}");
             versionLabel.style.fontSize = 9;
@@ -220,7 +220,7 @@ namespace XO.Entityween.Editor
             if (packageInfo != null)
             {
                 string sourcePath = Path.Combine(packageInfo.resolvedPath, "Samples~");
-                string packageVersion = EntityweenVersionHelper.Version;
+                string packageVersion = PackageVersionHelper.Version;
                 string targetPath = $"Assets/Samples/Entityween/{packageVersion}";
                 try
                 {

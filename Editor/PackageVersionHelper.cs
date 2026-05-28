@@ -1,12 +1,12 @@
 using System.IO;
 using System.Text.RegularExpressions;
-using UnityEditor;
 
 namespace XO.Entityween.Editor
 {
-    public static class EntityweenVersionHelper
+    public static class PackageVersionHelper
     {
-        private static string _cachedVersion;
+        private static string _cachedVersion; 
+        private static string _directPath = "Packages/Entityween/package.json";
 
         public static string Version
         {
@@ -14,15 +14,15 @@ namespace XO.Entityween.Editor
             {
                 if (string.IsNullOrEmpty(_cachedVersion))
                 {
-                    _cachedVersion = ResolveVersion();
+                    _cachedVersion = ResolveVersion(_directPath);
                 }
                 return _cachedVersion;
             }
         }
 
-        private static string ResolveVersion()
+        private static string ResolveVersion(string directPath)
         {
-            var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(EntityweenVersionHelper).Assembly);
+            var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(PackageVersionHelper).Assembly);
             if (packageInfo != null)
             {
                 if (!string.IsNullOrEmpty(packageInfo.version))
@@ -48,7 +48,6 @@ namespace XO.Entityween.Editor
                 }
             }
 
-            string directPath = "Packages/Entityween/package.json";
             if (File.Exists(directPath))
             {
                 try
@@ -65,7 +64,7 @@ namespace XO.Entityween.Editor
                 }
             }
 
-            return "1.1.3";
+            return "0.0.0";
         }
     }
 }

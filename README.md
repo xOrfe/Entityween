@@ -1,6 +1,5 @@
 # Entityween
 
-<!-- Version: 1.1.3 -->
 
 [![Unity](https://img.shields.io/badge/Unity-6.0%2B-blue.svg?style=flat-square)](https://unity.com/)
 [![DOTS](https://img.shields.io/badge/DOTS-Entities_1.2%2B-orange.svg?style=flat-square)](https://unity.com/dots)

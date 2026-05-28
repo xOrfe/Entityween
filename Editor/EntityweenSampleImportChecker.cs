@@ -8,7 +8,7 @@ namespace XO.Entityween.Editor
     [InitializeOnLoad]
     public static class EntityweenSampleImportChecker
     {
-        private static string Version => EntityweenVersionHelper.Version;
+        private static string Version => PackageVersionHelper.Version;
         private const string PackageName = "Entityween";
         private static string SamplesRoot => "Assets/Samples/" + PackageName;
         private static string SampleScenesDir => $"{SamplesRoot}/{Version}/Scenes";
