@@ -376,9 +376,10 @@ namespace XO.Entityween
             adapter.SetComponentEnabled<TweenControl>(ghost, startEnabled);
             adapter.SetComponent(ghost, new PlaybackProgress
             {
-                ElapsedTime = -1f,
+                ElapsedTime = 0f,
                 NormalizedTime = 0f,
                 TimeType = bp.TimeType,
+                Direction = 1,
                 LoopType = bp.IsLoop ? bp.Loop.Type : LoopType.None,
                 LoopCount = bp.IsLoop ? bp.Loop.Count : 1,
                 LoopIndex = 0,
