@@ -1,9 +1,9 @@
 {
-	"displayName": "Entityween",
+	"displayName": "Entityween - High-Performance Tween For GameObjects And Entities",
 	"name": "com.xorfe.entityween",
 	"version": "1.1.3",
 	"unity": "6.0",
-	"description": "High-performance tweening utilities for Unity DOTS.",
+	"description": "High-Performance Tween For GameObjects And Entities",
 	"keywords": [
 		"unity",
 		"tween",
