@@ -91,6 +91,47 @@ namespace XO.Curve.Tests
         }
 
         [Test]
+        public void QuaternionMath_SmoothStep_DoubleCover_TakesShortestPath()
+        {
+            var quaternionMath = default(QuaternionMath);
+            quaternion current = quaternion.identity;
+            quaternion target = quaternion.EulerXYZ(0f, math.radians(90f), 0f);
+            quaternion negativeTarget = target;
+            negativeTarget.value = -negativeTarget.value;
+
+            quaternion result = quaternionMath.SmoothStep(current, negativeTarget, 0.5f, 0.1f);
+            float currentDot = math.abs(math.dot(current.value, target.value));
+            float resultDot = math.abs(math.dot(result.value, target.value));
+
+            Assert.Greater(resultDot, currentDot);
+
+            quaternion closeToTarget = quaternionMath.SmoothStep(current, negativeTarget, 0.5f, 10f);
+            Assert.GreaterOrEqual(math.abs(math.dot(closeToTarget.value, target.value)), 0.9999f);
+        }
+
+        [Test]
+        public void QuaternionMath_SmoothDamp_DoubleCover_ConvergesWithoutOscillations()
+        {
+            var quaternionMath = default(QuaternionMath);
+            quaternion current = quaternion.identity;
+            quaternion target = quaternion.EulerXYZ(0f, math.radians(90f), 0f);
+            quaternion negativeTarget = target;
+            negativeTarget.value = -negativeTarget.value;
+
+            quaternion velocity = new quaternion(0f, 0f, 0f, 0f);
+            float smoothTime = 0.5f;
+            float maxSpeed = float.PositiveInfinity;
+
+            for (int i = 0; i < 50; i++)
+            {
+                quaternion t = (i % 2 == 0) ? target : negativeTarget;
+                current = quaternionMath.SmoothDamp(current, t, ref velocity, smoothTime, maxSpeed, 0.02f);
+            }
+
+            Assert.GreaterOrEqual(math.abs(math.dot(current.value, target.value)), 0.99f);
+        }
+
+        [Test]
         public void QuaternionMath_MoveTowards_ClampsToMaxDelta()
         {
             var quaternionMath = default(QuaternionMath);

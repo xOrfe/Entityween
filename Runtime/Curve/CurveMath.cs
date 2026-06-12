@@ -148,7 +148,17 @@ namespace XO.Curve
 
     public struct QuaternionMath : ICurveMath<quaternion>
     {
-        public quaternion Lerp(quaternion a, quaternion b, float t) => math.slerp(a, b, t);
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        private static quaternion ShortestPathSlerp(quaternion a, quaternion b, float t)
+        {
+            if (math.dot(a, b) < 0.0f)
+            {
+                b.value = -b.value;
+            }
+            return math.slerp(a, b, t);
+        }
+
+        public quaternion Lerp(quaternion a, quaternion b, float t) => ShortestPathSlerp(a, b, t);
         public float GetDistance(quaternion a, quaternion b)
         {
             float dot = math.dot(a.value, b.value);
@@ -159,15 +169,19 @@ namespace XO.Curve
         {
             switch (type)
             {
-                case SplineType.Linear: return math.slerp(p0, p1, t);
+                case SplineType.Linear: return ShortestPathSlerp(p0, p1, t);
                 case SplineType.Step: return t >= 1f ? p1 : p0;
                 case SplineType.CubicBezier:
-                    var a = math.slerp(p0, p1, t);
-                    var b = math.slerp(p1, p2, t);
-                    var c = math.slerp(p2, p3, t);
-                    var d = math.slerp(a, b, t);
-                    var e = math.slerp(b, c, t);
-                    return math.slerp(d, e, t);
+                    var q0 = p0; var q1 = p1; var q2 = p2; var q3 = p3;
+                    if (math.dot(q0, q1) < 0f) q1.value = -q1.value;
+                    if (math.dot(q1, q2) < 0f) q2.value = -q2.value;
+                    if (math.dot(q2, q3) < 0f) q3.value = -q3.value;
+                    var a = math.slerp(q0, q1, t);
+                    var b = math.slerp(q1, q2, t);
+                    var c = math.slerp(q2, q3, t);
+                    var d = ShortestPathSlerp(a, b, t);
+                    var e = ShortestPathSlerp(b, c, t);
+                    return ShortestPathSlerp(d, e, t);
                 case SplineType.CatmullRom:
                 case SplineType.BSpline:
                     var v0 = p0.value; var v1 = p1.value; var v2 = p2.value; var v3 = p3.value;
@@ -187,8 +201,8 @@ namespace XO.Curve
 
         public quaternion Bend(quaternion start, quaternion end, quaternion bendStart, quaternion bendEnd, quaternion bendSample, float t)
         {
-            quaternion baseRotation = math.slerp(start, end, t);
-            quaternion bendLine = math.slerp(bendStart, bendEnd, t);
+            quaternion baseRotation = ShortestPathSlerp(start, end, t);
+            quaternion bendLine = ShortestPathSlerp(bendStart, bendEnd, t);
             quaternion delta = math.mul(bendSample, math.inverse(bendLine));
             return math.normalize(math.mul(delta, baseRotation));
         }
@@ -225,7 +239,11 @@ namespace XO.Curve
 
         public quaternion SmoothStep(quaternion current, quaternion target, float smoothTime, float deltaTime)
         {
-            float angularDot = math.abs(math.dot(target, current));
+            if (math.dot(current, target) < 0.0f)
+            {
+                target.value = -target.value;
+            }
+            float angularDot = math.dot(target, current);
             return angularDot < 0.99999f
                 ? math.slerp(current, target, CurveMathUtility.GetSmoothStep(smoothTime, deltaTime))
                 : target;
