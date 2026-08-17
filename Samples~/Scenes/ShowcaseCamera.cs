@@ -133,7 +133,7 @@ namespace Entityween.Samples
         public void OnUpdate(ref SystemState state)
         {
             if (Camera.main == null) return;
-            if (Object.FindFirstObjectByType<ShowcaseRuntimeCameraRig>() != null) return;
+            if (Object.FindAnyObjectByType<ShowcaseRuntimeCameraRig>() != null) return;
 
             var localToWorldLookup = SystemAPI.GetComponentLookup<LocalToWorld>(true);
             foreach (var (transform, settings, focusTargets, lookTarget) in SystemAPI
