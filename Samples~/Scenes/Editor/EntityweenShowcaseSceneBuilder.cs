@@ -18,7 +18,7 @@ namespace Entityween.Editor
         [MenuItem("Tools/Entityween/Generate Showcase Scene", false, 10)]
         public static void GenerateShowcaseScene()
         {
-            string version = EntityweenVersionHelper.Version;
+            string version = PackageVersionHelper.Version;
             string outputDir = $"Assets/Samples/Entityween/{version}/Scenes";
             string subSceneDir = $"{outputDir}/SubScenes";
             if (!Directory.Exists(outputDir))

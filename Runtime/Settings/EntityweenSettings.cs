@@ -75,5 +75,13 @@ namespace XO.Entityween
             hideFlags = HideFlags.None;
 #endif
         }
+
+#if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticData()
+        {
+            _instance = null;
+        }
+#endif
     }
 }

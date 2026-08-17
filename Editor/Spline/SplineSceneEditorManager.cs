@@ -15,14 +15,26 @@ namespace XO.Curve.Editor
 
         public static bool MirrorTangents = true;
         public static bool EditRotationMode = false;
-        private static Vector3 _defaultTangentOffset = new Vector3(1f, 0f, 1f);
+        private static readonly Vector3 _defaultTangentOffset = new Vector3(1f, 0f, 1f);
         private static bool _isRotating = false;
         private static Quaternion _lastFrameRotation = Quaternion.identity;
 
         static SplineSceneEditorManager()
         {
             SceneView.duringSceneGui += OnSceneGUI;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             RestoreSessionState();
+        }
+
+        private static void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode || state == PlayModeStateChange.EnteredPlayMode)
+            {
+                _activePropertyPath = "";
+                _activeTargetId = EntityId.None;
+                _isRotating = false;
+                _lastFrameRotation = Quaternion.identity;
+            }
         }
 
         private static void RestoreSessionState()

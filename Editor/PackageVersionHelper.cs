@@ -3,10 +3,17 @@ using System.Text.RegularExpressions;
 
 namespace XO.Entityween.Editor
 {
+    [UnityEditor.InitializeOnLoad]
     public static class PackageVersionHelper
     {
         private static string _cachedVersion; 
-        private static string _directPath = "Packages/Entityween/package.json";
+        private const string DirectPath = "Packages/Entityween/package.json";
+
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void ResetCache()
+        {
+            _cachedVersion = null;
+        }
 
         public static string Version
         {
@@ -14,7 +21,7 @@ namespace XO.Entityween.Editor
             {
                 if (string.IsNullOrEmpty(_cachedVersion))
                 {
-                    _cachedVersion = ResolveVersion(_directPath);
+                    _cachedVersion = ResolveVersion(DirectPath);
                 }
                 return _cachedVersion;
             }
