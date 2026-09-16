@@ -11,7 +11,21 @@ namespace XO.Curve.Editor
         private const string SESSION_KEY_ACTIVE_PROPERTY_PATH = "Entityween.SplineEditor.ActivePropertyPath";
 
         private static string _activePropertyPath = "";
+#if UNITY_6000_0_OR_NEWER
         private static EntityId _activeTargetId = EntityId.None;
+        private static bool HasActiveTarget => _activeTargetId != EntityId.None;
+        private static void ClearActiveTarget() => _activeTargetId = EntityId.None;
+        private static Object GetActiveTargetObject() => EditorUtility.EntityIdToObject(_activeTargetId);
+        private static void SetActiveTargetObject(Object obj) => _activeTargetId = obj != null ? obj.GetEntityId() : EntityId.None;
+        private static bool IsActiveTarget(Object obj) => obj != null && _activeTargetId == obj.GetEntityId();
+#else
+        private static int _activeTargetId = 0;
+        private static bool HasActiveTarget => _activeTargetId != 0;
+        private static void ClearActiveTarget() => _activeTargetId = 0;
+        private static Object GetActiveTargetObject() => EditorUtility.InstanceIDToObject(_activeTargetId);
+        private static void SetActiveTargetObject(Object obj) => _activeTargetId = obj != null ? obj.GetInstanceID() : 0;
+        private static bool IsActiveTarget(Object obj) => obj != null && _activeTargetId == obj.GetInstanceID();
+#endif
 
         public static bool MirrorTangents = true;
         public static bool EditRotationMode = false;
@@ -31,7 +45,7 @@ namespace XO.Curve.Editor
             if (state == PlayModeStateChange.ExitingEditMode || state == PlayModeStateChange.EnteredPlayMode)
             {
                 _activePropertyPath = "";
-                _activeTargetId = EntityId.None;
+                ClearActiveTarget();
                 _isRotating = false;
                 _lastFrameRotation = Quaternion.identity;
             }
@@ -44,7 +58,7 @@ namespace XO.Curve.Editor
 
             if (string.IsNullOrEmpty(globalIdStr) || string.IsNullOrEmpty(_activePropertyPath))
             {
-                _activeTargetId = UnityEngine.EntityId.None;
+                ClearActiveTarget();
                 _activePropertyPath = "";
                 return;
             }
@@ -54,14 +68,14 @@ namespace XO.Curve.Editor
                 var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(globalId);
                 if (obj != null)
                 {
-                    _activeTargetId = obj.GetEntityId();
+                    SetActiveTargetObject(obj);
                     Selection.activeObject = obj;
                     Tools.current = Tool.None;
                     return;
                 }
             }
 
-            _activeTargetId = UnityEngine.EntityId.None;
+            ClearActiveTarget();
             _activePropertyPath = "";
             Tools.current = Tool.Move;
             ClearSessionState();
@@ -69,13 +83,13 @@ namespace XO.Curve.Editor
 
         private static void SaveSessionState()
         {
-            if (_activeTargetId == UnityEngine.EntityId.None || string.IsNullOrEmpty(_activePropertyPath))
+            if (!HasActiveTarget || string.IsNullOrEmpty(_activePropertyPath))
             {
                 ClearSessionState();
                 return;
             }
 
-            var targetObject = EditorUtility.EntityIdToObject(_activeTargetId);
+            var targetObject = GetActiveTargetObject();
             if (targetObject != null)
             {
                 var globalId = GlobalObjectId.GetGlobalObjectIdSlow(targetObject);
@@ -100,7 +114,7 @@ namespace XO.Curve.Editor
             var target = property.serializedObject.targetObject;
             if (target == null) return false;
 
-            return _activeTargetId == target.GetEntityId() && _activePropertyPath == property.propertyPath;
+            return IsActiveTarget(target) && _activePropertyPath == property.propertyPath;
         }
 
         public static void TogglePropertyEditing(SerializedProperty property)
@@ -111,17 +125,15 @@ namespace XO.Curve.Editor
 
             if (IsEditingProperty(property))
             {
-
                 _activePropertyPath = "";
-                _activeTargetId = UnityEngine.EntityId.None;
+                ClearActiveTarget();
                 Tools.current = Tool.Move;
                 ClearSessionState();
             }
             else
             {
-
                 _activePropertyPath = property.propertyPath;
-                _activeTargetId = target.GetEntityId();
+                SetActiveTargetObject(target);
 
                 EditRotationMode = property.name.Contains("rotational") || property.propertyPath.Contains("rotational");
 
@@ -134,9 +146,9 @@ namespace XO.Curve.Editor
 
         private static void OnSceneGUI(SceneView sceneView)
         {
-            if (_activeTargetId == UnityEngine.EntityId.None || string.IsNullOrEmpty(_activePropertyPath)) return;
+            if (!HasActiveTarget || string.IsNullOrEmpty(_activePropertyPath)) return;
 
-            var targetObject = EditorUtility.EntityIdToObject(_activeTargetId);
+            var targetObject = GetActiveTargetObject();
             GameObject targetGameObject = null;
             if (targetObject is Component splineComp)
             {
@@ -145,10 +157,9 @@ namespace XO.Curve.Editor
 
             if (targetObject == null || (Selection.activeObject != targetObject && Selection.activeObject != targetGameObject))
             {
-
-                if (_activeTargetId != UnityEngine.EntityId.None)
+                if (HasActiveTarget)
                 {
-                    _activeTargetId = UnityEngine.EntityId.None;
+                    ClearActiveTarget();
                     _activePropertyPath = "";
                     Tools.current = Tool.Move;
                     ClearSessionState();
