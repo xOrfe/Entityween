@@ -1,7 +1,7 @@
 {
 	"displayName": "Entityween - High-Performance Tween For GameObjects And Entities",
 	"name": "com.xorfe.entityween",
-	"version": "1.1.4",
+	"version": "1.2.0",
 	"unity": "6.0",
 	"description": "High-Performance Tween For GameObjects And Entities",
 	"keywords": [
