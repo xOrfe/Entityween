@@ -394,7 +394,7 @@ namespace XO.Entityween
             if (!em.HasComponent<TweenTransformReference>(ghost))
                 return;
 
-            var transform = em.GetComponentObject<TweenTransformReference>(ghost).Transform;
+            var transform = em.GetComponentData<TweenTransformReference>(ghost).Transform.Value;
             if (transform == null)
                 return;
 

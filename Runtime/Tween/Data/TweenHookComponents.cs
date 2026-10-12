@@ -17,8 +17,12 @@ namespace XO.Entityween
         public TweenSpace Space;
     }
 
-    internal sealed class TweenTransformReference : IComponentData
+    internal struct TweenTransformReference : IComponentData
     {
-        public Transform Transform;
+        public UnityObjectRef<Transform> Transform;
+    }
+
+    internal struct TweenTransformCleanup : ICleanupComponentData
+    {
     }
 }

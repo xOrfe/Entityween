@@ -10,7 +10,6 @@ namespace XO.Entityween
         Entity CreateEntity();
         Entity CreateTweenEntity<T>() where T : unmanaged;
         void AddComponent<T>(Entity e, T component) where T : unmanaged, IComponentData;
-        void AddComponentObject<T>(Entity e, T component) where T : class, IComponentData;
         void SetComponent<T>(Entity e, T component) where T : unmanaged, IComponentData;
         void RemoveComponent<T>(Entity e) where T : unmanaged, IComponentData;
         void SetComponentEnabled<T>(Entity e, bool enabled) where T : unmanaged, IEnableableComponent, IComponentData;
@@ -45,11 +44,6 @@ namespace XO.Entityween
             if (Em.HasComponent<T>(e)) Em.SetComponentData(e, component);
             else Em.AddComponentData(e, component);
         }
-        public void AddComponentObject<T>(Entity e, T component) where T : class, IComponentData
-        {
-            if (Em.HasComponent<T>(e)) Em.RemoveComponent<T>(e);
-            Em.AddComponentObject(e, component);
-        }
         public void SetComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => Em.SetComponentData(e, component);
         public void RemoveComponent<T>(Entity e) where T : unmanaged, IComponentData => Em.RemoveComponent<T>(e);
         public void SetComponentEnabled<T>(Entity e, bool enabled) where T : unmanaged, IEnableableComponent, IComponentData => Em.SetComponentEnabled<T>(e, enabled);
@@ -81,7 +75,6 @@ namespace XO.Entityween
         }
 
         public void AddComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => ECB.AddComponent(e, component);
-        public void AddComponentObject<T>(Entity e, T component) where T : class, IComponentData => Debug.LogError("Cannot add managed component from EntityCommandBuffer.");
         public void SetComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => ECB.SetComponent(e, component);
         public void RemoveComponent<T>(Entity e) where T : unmanaged, IComponentData => ECB.RemoveComponent<T>(e);
         public void SetComponentEnabled<T>(Entity e, bool enabled) where T : unmanaged, IEnableableComponent, IComponentData => ECB.SetComponentEnabled<T>(e, enabled);
@@ -113,7 +106,6 @@ namespace XO.Entityween
         }
 
         public void AddComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => ECB.AddComponent(SortKey, e, component);
-        public void AddComponentObject<T>(Entity e, T component) where T : class, IComponentData => Debug.LogError("Cannot add managed component from ParallelWriter.");
         public void SetComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => ECB.SetComponent(SortKey, e, component);
         public void RemoveComponent<T>(Entity e) where T : unmanaged, IComponentData => ECB.RemoveComponent<T>(SortKey, e);
         public void SetComponentEnabled<T>(Entity e, bool enabled) where T : unmanaged, IEnableableComponent, IComponentData => ECB.SetComponentEnabled<T>(SortKey, e, enabled);
@@ -144,7 +136,6 @@ namespace XO.Entityween
         }
 
         public void AddComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => Baker.AddComponent(e, component);
-        public void AddComponentObject<T>(Entity e, T component) where T : class, IComponentData => Debug.LogError("Cannot add managed component from Baker.");
         public void SetComponent<T>(Entity e, T component) where T : unmanaged, IComponentData => Baker.SetComponent(e, component);
         public void RemoveComponent<T>(Entity e) where T : unmanaged, IComponentData => Debug.LogError("Cannot remove component from Baker.");
         public void SetComponentEnabled<T>(Entity e, bool enabled) where T : unmanaged, IEnableableComponent, IComponentData => Baker.SetComponentEnabled<T>(e, enabled);

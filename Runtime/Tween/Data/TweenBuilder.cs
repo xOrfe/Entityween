@@ -524,13 +524,7 @@ namespace XO.Entityween
                 return false;
             }
 
-            if (!adapter.SupportsManagedComponents)
-            {
-                Debug.LogError("BindTransform requires an EntityManager-backed Play call because Transform references are stored as managed components.");
-                return false;
-            }
-
-            adapter.AddComponentObject(ghost, new TweenTransformReference { Transform = bp.BoundTransform });
+            adapter.AddComponent(ghost, new TweenTransformReference { Transform = bp.BoundTransform });
             adapter.AddComponent(ghost, new TweenTransformTarget
             {
                 Binding = bp.TransformBinding,

@@ -7,15 +7,18 @@ namespace XO.Entityween
     [UpdateBefore(typeof(TweenStartFromCurrentSystem))]
     internal partial class TweenTransformStartFromCurrentSystem : SystemBase
     {
+        private EntityQuery _startFromCurrentQuery;
+
         protected override void OnCreate()
         {
-            RequireForUpdate<TweenStartFromCurrent>();
+            _startFromCurrentQuery = SystemAPI.QueryBuilder()
+                .WithAll<TweenStartFromCurrent, TweenTransformTarget>()
+                .Build();
+            RequireForUpdate(_startFromCurrentQuery);
         }
 
         protected override void OnUpdate()
         {
-            var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
-
             foreach (var (rangeRef, runtimeRef, startFromCurrent, transformTargetRef, entity) in SystemAPI.Query<RefRW<TweenRange<float3>>, RefRW<TweenRuntime<float3>>, RefRO<TweenStartFromCurrent>, RefRO<TweenTransformTarget>>().WithEntityAccess())
             {
                 var targetVal = transformTargetRef.ValueRO;
@@ -24,7 +27,6 @@ namespace XO.Entityween
                     rangeRef.ValueRW.StartPoint = start;
                     runtimeRef.ValueRW.CurrentValue = start;
                 }
-                ecb.RemoveComponent<TweenStartFromCurrent>(entity);
             }
 
             foreach (var (rangeRef, runtimeRef, startFromCurrent, transformTargetRef, entity) in SystemAPI.Query<RefRW<TweenRange<quaternion>>, RefRW<TweenRuntime<quaternion>>, RefRO<TweenStartFromCurrent>, RefRO<TweenTransformTarget>>().WithEntityAccess())
@@ -34,7 +36,6 @@ namespace XO.Entityween
                     rangeRef.ValueRW.StartPoint = start;
                     runtimeRef.ValueRW.CurrentValue = start;
                 }
-                ecb.RemoveComponent<TweenStartFromCurrent>(entity);
             }
 
             foreach (var (rangeRef, runtimeRef, startFromCurrent, transformTargetRef, entity) in SystemAPI.Query<RefRW<TweenRange<float>>, RefRW<TweenRuntime<float>>, RefRO<TweenStartFromCurrent>, RefRO<TweenTransformTarget>>().WithEntityAccess())
@@ -44,11 +45,9 @@ namespace XO.Entityween
                     rangeRef.ValueRW.StartPoint = start;
                     runtimeRef.ValueRW.CurrentValue = start;
                 }
-                ecb.RemoveComponent<TweenStartFromCurrent>(entity);
             }
 
-            ecb.Playback(EntityManager);
-            ecb.Dispose();
+            EntityManager.RemoveComponent<TweenStartFromCurrent>(_startFromCurrentQuery);
         }
 
         private bool TryReadFloat3(Entity entity, TweenTransformBinding binding, TweenSpace space, out float3 value)
@@ -93,7 +92,7 @@ namespace XO.Entityween
             if (!EntityManager.HasComponent<TweenTransformReference>(entity))
                 return false;
 
-            transform = EntityManager.GetComponentObject<TweenTransformReference>(entity).Transform;
+            transform = EntityManager.GetComponentData<TweenTransformReference>(entity).Transform.Value;
             return transform != null;
         }
     }
